@@ -1,0 +1,238 @@
+% Synthetic test file for the ECEB style linter (scripts/lint_euclid_style.py).
+%
+% Each violation line is marked with:    % EXPECT: <rule_id>
+% Each clean counterpart is marked with: % CLEAN: <rule_id>
+% Document-level expectations use:       % EXPECT_DOC: <rule_id>
+% Edge cases use:                        % EDGE: <label>
+%
+% The linter should flag every EXPECT line and skip every CLEAN line.
+
+% ====================================================================
+% PREAMBLE — must be entirely skipped by the linter
+% ====================================================================
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\newcommand{\Euclid}{\textit{Euclid}}
+\newcommand{\IE}{$I_{\mathrm{E}}$}
+\newcommand{\YE}{$Y_{\mathrm{E}}$}
+\newcommand{\JE}{$J_{\mathrm{E}}$}
+\newcommand{\HE}{$H_{\mathrm{E}}$}
+% Preamble must NOT trigger rules even with violations present:
+% dataset color analyze gray percent favor catalog comprised of
+\definecolor{gray}{HTML}{808080}
+\definecolor{lightgray}{gray}{0.9}
+
+\begin{document}
+
+% ====================================================================
+% NAMING & TERMINOLOGY (N01--N10)
+% ====================================================================
+
+The Euclid mission observed the deep fields. % EXPECT: N01
+The \Euclid\ mission observed the deep fields. % CLEAN: N01
+
+The \textit{Euclid} Consortium approved the results. % EXPECT: N02
+The Euclid Consortium approved the results. % CLEAN: N02
+
+The \textsc{VIS} instrument was calibrated. % EXPECT: N03
+The VIS instrument was calibrated. % CLEAN: N03
+
+Observations were taken in the IE band. % EXPECT: N04
+Observations were taken in the \IE\ band. % CLEAN: N04
+
+We used the full dataset for training. % EXPECT: N05
+We used the full data set for training. % CLEAN: N05
+
+The sample is comprised of 500 galaxies. % EXPECT: N06
+The sample is composed of 500 galaxies. % CLEAN: N06
+
+The catalogue is publically available. % EXPECT: N07
+The catalogue is publicly available. % CLEAN: N07
+
+We achieved a high S/N ratio in all bands. % EXPECT: N08
+We achieved a high S/N in all bands. % CLEAN: N08
+
+The modelisation of the PSF is critical. % EXPECT: N09
+The modelling of the PSF is critical. % CLEAN: N09
+
+The errors associated to this method are small. % EXPECT: N10
+The errors associated with this method are small. % CLEAN: N10
+
+% ====================================================================
+% BRITISH ENGLISH (E01--E08)
+% ====================================================================
+
+We analyze the photometric redshifts. % EXPECT: E01
+We analyse the photometric redshifts. % CLEAN: E01
+
+This accounts for 30 percent of the sample. % EXPECT: E02
+This accounts for 30 per cent of the sample. % CLEAN: E02
+
+The background appears gray in the image. % EXPECT: E03
+The background appears grey in the image. % CLEAN: E03
+
+See the acknowledgment section below. % EXPECT: E04
+See the acknowledgement section below. % CLEAN: E04
+
+Accurate modeling requires good data. % EXPECT: E05
+Accurate modelling requires good data. % CLEAN: E05
+
+Each source is labeled with a unique ID. % EXPECT: E06
+Each source is labelled with a unique ID. % CLEAN: E06
+
+We cross-matched the catalog with SDSS. % EXPECT: E07
+We cross-matched the catalogue with SDSS. % CLEAN: E07
+
+Results favor a flat universe. % EXPECT: E08
+Results favour a flat universe. % CLEAN: E08
+
+% ====================================================================
+% UNITS & NUMBERS (U01, U02, U03, U05, U07)
+% ====================================================================
+
+The velocity dispersion is 300 km/s in the core. % EXPECT: U01
+The velocity dispersion is 300\,km\,s$^{-1}$ in the core. % CLEAN: U01
+
+Separations were measured in arcsecs from the centre. % EXPECT: U02
+Separations were measured in arcsec from the centre. % CLEAN: U02
+
+The resolution is 5arcsec in all bands. % EXPECT: U03
+The resolution is 5\,arcsec in all bands. % CLEAN: U03
+
+The luminosity is 3e5 solar luminosities. % EXPECT: U05
+The luminosity is $3 \times 10^{5}$ solar luminosities. % CLEAN: U05
+
+The catalogue contains 10,000 sources. % EXPECT: U07
+The catalogue contains 10\,000 sources. % CLEAN: U07
+
+% ====================================================================
+% TYPESETTING (T01, T02, T04, T05, T06, T08)
+% ====================================================================
+
+The so-called "standard" candles were observed. % EXPECT: T01
+The so-called ``standard'' candles were observed. % CLEAN: T01
+
+We found (20-25) candidate sources per field. % EXPECT: T02
+We found (20--25) candidate sources per field. % CLEAN: T02
+
+The fit gives $log(L) = 42.3$ for the sample. % EXPECT: T04
+The fit gives $\log(L) = 42.3$ for the sample. % CLEAN: T04
+
+This paragraph ends with a forced line break.\\ % EXPECT: T05
+This paragraph ends normally. % CLEAN: T05
+
+See the documentation at https://euclid.esa.int for details. % EXPECT: T06
+See the documentation at \url{https://euclid.esa.int} for details. % CLEAN: T06
+
+Fig. 1 shows the photometric residuals. % EXPECT: T08
+Figure 1 shows the photometric residuals. % CLEAN: T08
+
+% ====================================================================
+% REFERENCES & CITATIONS (R02, R03, R04)
+% ====================================================================
+
+Euclid Collaboration et al. (2024) reported the calibration. % EXPECT: R02
+Euclid Collaboration: Scaramella et al. (2024) reported the calibration. % CLEAN: R02
+
+% This old paragraph was part of an earlier draft and should have been deleted before the final submission % EXPECT: R03
+% Short note % CLEAN: R03
+
+% R04 is a document-level check: absence of the AckEC macro means it fires % EXPECT_DOC: R04
+
+% ====================================================================
+% STYLE GUIDE SPECIFIC (S01--S04)
+% ====================================================================
+
+The DEC of the target is measured precisely. % EXPECT: S01
+The Dec of the target is measured precisely. % CLEAN: S01
+
+The distribution is nonGaussian in the tails. % EXPECT: S02
+The distribution is non-Gaussian in the tails. % CLEAN: S02
+
+Deep imaging in the J band reached 26 mag. % EXPECT: S03
+Deep imaging in the $\textit{J}$ band reached 26 mag. % CLEAN: S03
+
+The data is consistent with earlier measurements. % EXPECT: S04
+The data are consistent with earlier measurements. % CLEAN: S04
+
+% ====================================================================
+% EDGE CASES — must NOT produce false positives
+% ====================================================================
+
+% Edge: \definecolor{gray} in body must NOT trigger E03/E01
+\definecolor{mygray}{gray}{0.5} % EDGE: E03-definecolor
+
+% Edge: \newcommand with Euclid must NOT trigger N01
+\newcommand{\MyEuclid}{\textit{Euclid}} % EDGE: N01-newcommand
+
+% Edge: \url{} wrapping must NOT trigger T06
+Visit \url{http://example.com/data} for details. % EDGE: T06-url
+
+% Edge: math content must NOT trigger U01
+The velocity is $v = 300\,\mathrm{km\,s^{-1}}$ in the cluster. % EDGE: U01-math
+
+% Edge: \texttt{} must NOT trigger E01
+Use the \texttt{color} keyword in the configuration file. % EDGE: E01-texttt
+
+% Edge: verbatim environment must NOT trigger N05
+\begin{verbatim}
+dataset = load("input.csv")
+color = "gray"
+\end{verbatim}
+
+% Edge: display math (equation env) must NOT trigger T04
+\begin{equation}
+\log_{10} x = y
+\end{equation}
+
+% Edge: nested environments (aligned inside equation inside figure)
+\begin{figure}
+\begin{equation}
+\begin{aligned}
+  a &= b + c \\
+  d &= e \times f
+\end{aligned}
+\end{equation}
+\caption{Test figure.}
+\end{figure}
+
+% Edge: \ac{} macros must NOT trigger N01
+The \ac{Euclid} mission is described in detail. % EDGE: N01-ac
+
+% Edge: \href{url}{text} must NOT trigger T06
+See \href{https://euclid.esa.int}{the website} for more. % EDGE: T06-href
+
+% Edge: inline math with \, before unit must NOT trigger U03
+The distance is $5\,\mathrm{arcsec}$ from the centre. % EDGE: U03-math
+
+% Edge: number range inside \ref must NOT trigger T02
+See Table~\ref{tab2-5} for a summary. % EDGE: T02-ref
+
+% Edge: \textit{Euclid} (correct usage) must NOT trigger N01
+The \textit{Euclid} satellite was launched in 2023. % EDGE: N01-textit
+
+% Edge: R.A. test for S01
+The R.A. of the cluster is measured. % EXPECT: S01
+
+% Edge: ORCID line must NOT trigger T02
+\and J.~Smith\orcid{0000-0002-5258-8761}\inst{\ref{aff3}} % EDGE: T02-orcid
+
+% Edge: affiliation address must NOT trigger T02
+Kavli Institute, Chiba 277-8583, Japan\label{aff103} % EDGE: T02-address
+
+% Edge: {\tt Euclid Emulator} must NOT trigger N01
+The {\tt Euclid Emulator 2} reproduces nonlinear clustering. % EDGE: N01-tt
+
+% Edge: "Center for" (institution name) must NOT trigger E01
+Center for Computational Astrophysics, New York. % EDGE: E01-institution
+
+% Edge: \begin{center} must NOT trigger E01
+\begin{center}
+This text is centred.
+\end{center}
+
+% Edge: postal code must NOT trigger U05
+NRC Herzberg, Victoria, BC V9E 2E7, Canada\label{aff224} % EDGE: U05-postal
+
+\end{document}
