@@ -7,6 +7,8 @@ units/numbers, LaTeX typesetting, references/citations, and Euclid-specific
 conventions. Reports violations with line number, rule ID, severity, and the
 relevant Style Guide section.
 
+This tool is not an official product of the ECEB. 
+
 ## Installation
 
 No dependencies beyond Python 3.9+. Just clone and run:
