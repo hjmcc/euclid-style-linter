@@ -86,16 +86,16 @@ End with a summary count: `N critical, M warnings, K suggestions`.
 
 ## Rule categories
 
-The linter checks 6 categories with ~40 rules:
+The linter checks 6 categories with 44 rules:
 
 | Category | ID prefix | Examples |
 |----------|-----------|----------|
-| Naming & Terminology | N01-N10 | Euclid italicisation, instrument names, data set |
+| Naming & Terminology | N01-N12 | Euclid italicisation, instrument names, data set, compound hyphens |
 | British English | E01-E08 | US→UK spellings, per cent, catalogue |
-| Units & Numbers | U01-U08 | Exponent notation, thin spaces, thousands separator |
-| LaTeX Typesetting | T01-T08 | TeX quotes, en-dashes, paragraph breaks |
-| References & Citations | R01-R04 | EC citation format, \AckEC, commented text |
-| Style Guide Specific | S01-S04 | Dec/RA, data plural, waveband italics |
+| Units & Numbers | U01-U07 | Exponent notation, thin spaces, thousands separator |
+| LaTeX Typesetting | T01-T12 | TeX quotes, en-dashes, paragraph breaks, figure stretching |
+| References & Citations | R02-R05 | EC citation format, \AckEC, commented text, arXiv redundancy |
+| Style Guide Specific | S01-S05 | Dec/RA, data plural, waveband italics, Universe capitalisation |
 
 ## Example output format
 

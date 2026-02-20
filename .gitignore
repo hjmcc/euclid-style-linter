@@ -2,4 +2,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 tests/eceb_papers/
+*.zip
 *.tar
+*.tar.gz
+docs/Euclid_Style_Guide_V4.0.pdf
+docs/euclid_template/

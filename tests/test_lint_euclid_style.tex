@@ -59,6 +59,12 @@ The modelling of the PSF is critical. % CLEAN: N09
 The errors associated to this method are small. % EXPECT: N10
 The errors associated with this method are small. % CLEAN: N10
 
+This will allow to detect faint sources in the field. % EXPECT: N11
+This will allow one to detect faint sources in the field. % CLEAN: N11
+
+The analysis uses point like sources as calibrators. % EXPECT: N12
+The analysis uses point-like sources as calibrators. % CLEAN: N12
+
 % ====================================================================
 % BRITISH ENGLISH (E01--E08)
 % ====================================================================
@@ -107,7 +113,7 @@ The catalogue contains 10,000 sources. % EXPECT: U07
 The catalogue contains 10\,000 sources. % CLEAN: U07
 
 % ====================================================================
-% TYPESETTING (T01, T02, T04, T05, T06, T08)
+% TYPESETTING (T01, T02, T04, T05, T06, T08, T09, T10, T11, T12)
 % ====================================================================
 
 The so-called "standard" candles were observed. % EXPECT: T01
@@ -128,8 +134,27 @@ See the documentation at \url{https://euclid.esa.int} for details. % CLEAN: T06
 Fig. 1 shows the photometric residuals. % EXPECT: T08
 Figure 1 shows the photometric residuals. % CLEAN: T08
 
+\includegraphics[width=0.8\columnwidth, height=4cm]{fig.pdf} % EXPECT: T09
+\includegraphics[width=0.8\columnwidth]{fig.pdf} % CLEAN: T09
+
+The sources (AGN and stars)(see Merloni et al. 2018) are detected. % EXPECT: T10
+The sources (AGN and stars; see Merloni et al. 2018) are detected. % CLEAN: T10
+
+\acknowledgement{We thank the referee.} % EXPECT: T11
+\begin{acknowledgements} % CLEAN: T11
+
+This can be expressed as:
+\begin{equation} % EXPECT: T12
+x = y + z
+\end{equation}
+
+This can be expressed as
+\begin{equation} % CLEAN: T12
+x = y + z
+\end{equation}
+
 % ====================================================================
-% REFERENCES & CITATIONS (R02, R03, R04)
+% REFERENCES & CITATIONS (R02, R03, R04, R05)
 % ====================================================================
 
 Euclid Collaboration et al. (2024) reported the calibration. % EXPECT: R02
@@ -138,10 +163,13 @@ Euclid Collaboration: Scaramella et al. (2024) reported the calibration. % CLEAN
 % This old paragraph was part of an earlier draft and should have been deleted before the final submission % EXPECT: R03
 % Short note % CLEAN: R03
 
+Smith, J. 2023, arXiv e-prints, arXiv:2301.12345 % EXPECT: R05
+Smith, J. 2023, arXiv:2301.12345 % CLEAN: R05
+
 % R04 is a document-level check: absence of the AckEC macro means it fires % EXPECT_DOC: R04
 
 % ====================================================================
-% STYLE GUIDE SPECIFIC (S01--S04)
+% STYLE GUIDE SPECIFIC (S01--S05)
 % ====================================================================
 
 The DEC of the target is measured precisely. % EXPECT: S01
@@ -155,6 +183,9 @@ Deep imaging in the $\textit{J}$ band reached 26 mag. % CLEAN: S03
 
 The data is consistent with earlier measurements. % EXPECT: S04
 The data are consistent with earlier measurements. % CLEAN: S04
+
+The expansion of the universe is accelerating. % EXPECT: S05
+The expansion of the Universe is accelerating. % CLEAN: S05
 
 % ====================================================================
 % EDGE CASES — must NOT produce false positives
@@ -234,5 +265,35 @@ This text is centred.
 
 % Edge: postal code must NOT trigger U05
 NRC Herzberg, Victoria, BC V9E 2E7, Canada\label{aff224} % EDGE: U05-postal
+
+% Edge: "allow" with an object must NOT trigger N11
+This will allow us to detect faint sources. % EDGE: N11-object
+
+% Edge: hyphenated compound must NOT trigger N12
+The analysis uses point-like sources as calibrators. % EDGE: N12-hyphenated
+
+% Edge: \includegraphics with only width must NOT trigger T09
+\includegraphics[width=0.8\columnwidth]{fig.pdf} % EDGE: T09-width-only
+
+% Edge: separated parentheses with text between must NOT trigger T10
+The sources (AGN and stars) and (see Merloni et al. 2018) are detected. % EDGE: T10-separated
+
+% Edge: equation without colon on prev line must NOT trigger T12
+This can be expressed as
+\begin{equation} % EDGE: T12-no-colon
+x = y + z
+\end{equation}
+
+% Edge: "a different universe" must NOT trigger S05
+In a different universe the laws of physics might differ. % EDGE: S05-different
+
+% Edge: "the galaxy" (generic, not Milky Way) must NOT trigger S05
+The galaxy has a stellar mass of $10^{11}$ solar masses. % EDGE: S05-generic-galaxy
+
+% Edge: affiliation \\ must NOT trigger T05
+$^{1}$ INAF-Osservatorio, Via Frascati 33, I-00078 Roma, Italy\\ % EDGE: T05-affiliation
+
+% Edge: standalone noun "power law" must NOT trigger N12
+The relation is described by a power law with slope $\eta$. % EDGE: N12-noun
 
 \end{document}

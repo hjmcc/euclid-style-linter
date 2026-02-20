@@ -2,7 +2,7 @@
 
 Lint LaTeX files against the [Euclid Consortium Editorial Board (ECEB) Style Guide V4.0](https://www.euclid-ec.org/).
 
-Checks 36 rules across 6 categories: naming/terminology, British English,
+Checks 44 rules across 6 categories: naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and Euclid-specific
 conventions. Reports violations with line number, rule ID, severity, and the
 relevant Style Guide section.
@@ -67,6 +67,8 @@ Summary: 3 errors, 1 warnings (4 total)
 | N08 | Naming | warning | "S/N ratio" is redundant -- use "S/N" alone | 2.4.44 |
 | N09 | Naming | error | "modelisation" should be "modelling" | 2.4.8 |
 | N10 | Naming | error | "associated to" should be "associated with" | 2.4.9 |
+| N11 | Naming | warning | "allow to [verb]" — transitive verb needs an object | 2.4 |
+| N12 | Naming | warning | Compound adjective missing hyphen ("point like" etc.) | 2.4 |
 | E01 | British English | error | US spellings that should be British (50+ words) | 2.4.1 |
 | E02 | British English | error | "percent" should be "per cent" | 2.4.1 |
 | E03 | British English | error | "gray" should be "grey" | 2.4.1 |
@@ -86,13 +88,19 @@ Summary: 3 errors, 1 warnings (4 total)
 | T05 | Typesetting | warning | `\\` used as paragraph break -- use blank lines | 2.5.1 |
 | T06 | Typesetting | warning | URL not wrapped in `\url{}` or `\href{}` | 2.9 |
 | T08 | Typesetting | warning | Abbreviation at sentence start (write out in full) | 2.3.19 |
+| T09 | Typesetting | error | `\includegraphics` with both width and height (stretching) | 2.8 |
+| T10 | Typesetting | warning | Adjacent parentheses `)(` — merge or use semicolon | 2.5 |
+| T11 | Typesetting | error | `\acknowledgement{}` command — use environment instead | 3.4 |
+| T12 | Typesetting | warning | Colon before displayed equation — equations are sentences | 2.5 |
 | R02 | References | warning | EC citation should use "Euclid Collaboration:" format | 2.6.7 |
 | R03 | References | suggestion | Commented-out text (arXiv source is public) | 2.3.17 |
 | R04 | References | suggestion | Missing `\AckEC` acknowledgements macro | 3.4 |
+| R05 | References | warning | "arXiv e-prints" redundancy in bibliography | 2.6 |
 | S01 | Style | error | "DEC" should be "Dec", "R.A." should be "RA" | 2.3.10 |
 | S02 | Style | error | "non" before capitals needs hyphen ("non-Gaussian") | 2.4.41 |
 | S03 | Style | warning | Waveband letters should be italicised | 2.4.28 |
 | S04 | Style | error | "data is/was/has" -- data is plural in Euclid style | 2.4.35 |
+| S05 | Style | warning | "the universe/galaxy/sun" — capitalise when referring to ours | 3.3 |
 
 ## Categories
 
@@ -100,12 +108,12 @@ Filter rules by category with `--category`:
 
 | Flag | Rules |
 |------|-------|
-| `naming` | N01--N10 |
+| `naming` | N01--N12 |
 | `english` | E01--E08 |
 | `units` | U01, U02, U03, U05, U07 |
-| `typesetting` | T01, T02, T04, T05, T06, T08 |
-| `references` | R02, R03, R04 |
-| `style` | S01--S04 |
+| `typesetting` | T01, T02, T04--T06, T08--T12 |
+| `references` | R02--R05 |
+| `style` | S01--S05 |
 
 ## Testing
 
@@ -113,8 +121,8 @@ Filter rules by category with `--category`:
 python3 -m pytest tests/ -v
 ```
 
-The test suite includes 89 regression tests: 37 expected violations, 36 clean
-counterparts, 18 edge cases, and 1 document-level rule. All tests verify both
+The test suite includes 114 regression tests: 45 expected violations, 44 clean
+counterparts, 27 edge cases, and 1 document-level rule. All tests verify both
 that violations fire where expected and that false positives are suppressed.
 
 ## Claude Code integration
@@ -132,12 +140,14 @@ be automated (figure quality, cross-references, citation format).
 ## Validation
 
 The linter has been validated against published ECEB-reviewed papers:
+- EP-I: Wide Survey (arXiv:2108.01201)
+- Euclid II: VIS (arXiv:2405.13492)
 - Euclid I: Overview (arXiv:2405.13491)
 - One additional published EC paper
 
-Results: **100% precision** on non-debatable findings, with 12 false-positive
-fixes applied during validation. See `tests/validation_report.md` for the full
-triage.
+Results: **100% precision** on non-debatable findings across all papers, with
+17 false-positive fixes applied during validation. See
+`tests/validation_report.md` for the full triage.
 
 ## License
 

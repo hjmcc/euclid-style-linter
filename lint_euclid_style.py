@@ -3,7 +3,7 @@
 Lint a LaTeX file against the Euclid Consortium Editorial Board (ECEB)
 Style Guide V4.0.
 
-Checks ~40 high-value rules covering naming/terminology, British English,
+Checks 44 rules covering naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and style-guide-
 specific conventions.  Reports violations with line number, rule ID,
 severity, and the relevant Style Guide section.
@@ -48,7 +48,9 @@ _MATH_ENVS = {
     "aligned", "gathered", "split", "cases", "pmatrix", "bmatrix",
     "vmatrix", "Vmatrix",
 }
-_TABULAR_ENVS = {"tabular", "tabular*", "tabularx", "longtable", "array"}
+_TABULAR_ENVS = {"tabular", "tabular*", "tabularx", "longtable", "array",
+                  "supertabular", "supertabular*", "mpsupertabular",
+                  "mpsupertabular*", "xtabular", "xtabular*"}
 
 _BEGIN_RE = re.compile(r"\\begin\{(\w[\w*]*)\}")
 _END_RE = re.compile(r"\\end\{(\w[\w*]*)\}")
@@ -62,6 +64,7 @@ class TexContext:
         self.in_preamble = True
         self.has_ackec = False
         self.custom_commands: set[str] = set()
+        self.prev_raw_line: str = ""
 
     # --- environment queries ------------------------------------------------
     @property
@@ -77,8 +80,9 @@ class TexContext:
         return any(e in _TABULAR_ENVS for e in self.env_stack)
 
     # --- per-line update ----------------------------------------------------
-    def update(self, line: str) -> None:
+    def update(self, line: str, prev_line: str = "") -> None:
         """Update context from a raw source line."""
+        self.prev_raw_line = prev_line
         # Detect \begin{document}
         if r"\begin{document}" in line:
             self.in_preamble = False
@@ -377,6 +381,53 @@ class StyleChecker:
                 '"associated to" \u2192 "associated with"',
                 "2.4.9",
             ))
+        return violations
+
+    @staticmethod
+    def check_N11(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        """"allow to [verb]" / "permit to [verb]" — transitive verb needs object."""
+        violations = []
+        for m in re.finditer(r"\b(allow|permit|enable)s?\s+to\s+[a-z]", text, re.IGNORECASE):
+            word = m.group(1)
+            violations.append(Violation(
+                lineno, m.start(), "N11", "warning",
+                f'"{word} to [verb]" — "{word}" is transitive and needs an '
+                f'object (e.g. "{word} one to" or "{word} the detection of")',
+                "2.4",
+            ))
+        return violations
+
+    @staticmethod
+    def check_N12(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        """Compound adjective missing hyphen."""
+        violations = []
+        # Conservative list of compound adjectives common in astronomy.
+        # "point like" and "star forming" are always adjectival.
+        # Others require a following noun (not a preposition) to avoid
+        # flagging the standalone noun form ("a power law with slope").
+        _NOUN_FOLLOW = (
+            r"(?=spectr|slope|distribut|model|index|profile|form|function|"
+            r"fit|behaviour|behavior|exponent|tail|decay|dependenc|relat|"
+            r"natur|approximat|regime|luminosit|structur|survey|pattern|"
+            r"cluster|feature|map|simulat|environment|correlat|statistic|"
+            r"fluctuat|power|variat|galaxi|emission|stellar|popul)"
+        )
+        compounds = [
+            (r"\bpoint like\b", "point-like"),
+            (r"\bstar forming\b", "star-forming"),
+            (r"\bpower law\s+" + _NOUN_FOLLOW, "power-law"),
+            (r"\btwo point\s+" + _NOUN_FOLLOW, "two-point"),
+            (r"\blarge scale\s+" + _NOUN_FOLLOW, "large-scale"),
+            (r"\bsmall scale\s+" + _NOUN_FOLLOW, "small-scale"),
+        ]
+        for pat, fix in compounds:
+            for m in re.finditer(pat, text, re.IGNORECASE):
+                violations.append(Violation(
+                    lineno, m.start(), "N12", "warning",
+                    f'Compound adjective "{m.group(0).rstrip()}" '
+                    f'should be hyphenated \u2192 "{fix}"',
+                    "2.4",
+                ))
         return violations
 
     # ===== Category 2: British English =====================================
@@ -785,12 +836,31 @@ class StyleChecker:
                 "description", "center", "flushleft", "flushright",
                 "titlepage", "abstract", "title"}
             )
-            if not any(e in _NEWLINE_OK_ENVS for e in ctx.env_stack):
-                violations.append(Violation(
-                    lineno, len(stripped) - 2, "T05", "warning",
-                    r"Do not use \\ for paragraph breaks — use blank lines",
-                    "2.5.1",
-                ))
+            if any(e in _NEWLINE_OK_ENVS for e in ctx.env_stack):
+                return violations
+            # Skip affiliation/author block lines (use \\ for separators)
+            if re.search(
+                r"^\s*\$\^\{|\\inst\{|\\orcid\{|\\and\b|\\institute\{|"
+                r"\\affil\b|\\label\{aff",
+                stripped,
+            ):
+                return violations
+            # Skip \\ inside \footnote{} (line break in footnote)
+            if r"\footnote" in stripped or r"\footnote" in ctx.prev_raw_line:
+                return violations
+            # Skip \\ in supertabular header/footer commands and
+            # \multicolumn lines (table context not tracked as env)
+            if re.search(
+                r"\\(?:multicolumn|tablefirsthead|tablehead|"
+                r"tabletail|tablelasttail)\b",
+                stripped,
+            ):
+                return violations
+            violations.append(Violation(
+                lineno, len(stripped) - 2, "T05", "warning",
+                r"Do not use \\ for paragraph breaks — use blank lines",
+                "2.5.1",
+            ))
         return violations
 
     @staticmethod
@@ -840,6 +910,81 @@ class StyleChecker:
             ))
         return violations
 
+    @staticmethod
+    def check_T09(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""\includegraphics with both width and height (anisotropic stretching)."""
+        violations = []
+        stripped = _strip_comments(raw)
+        m = re.search(r"\\includegraphics\s*\[([^\]]*)\]", stripped)
+        if m:
+            opts = m.group(1)
+            has_width = bool(re.search(r"\bwidth\s*=", opts))
+            has_height = bool(re.search(r"\bheight\s*=", opts))
+            if has_width and has_height:
+                violations.append(Violation(
+                    lineno, m.start(), "T09", "error",
+                    "\\includegraphics specifies both width and height "
+                    "\u2192 anisotropic stretching; use only one dimension",
+                    "2.8",
+                ))
+        return violations
+
+    @staticmethod
+    def check_T10(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        """Adjacent closing/opening parentheses )( — merge or use semicolon."""
+        violations = []
+        stripped = _strip_comments(raw)
+        for m in re.finditer(r"\)\s*\(", stripped):
+            violations.append(Violation(
+                lineno, m.start(), "T10", "warning",
+                "Adjacent parentheses \")(...)(\" \u2192 merge into one "
+                "group or use semicolon \"(...; ...)\"",
+                "2.5",
+            ))
+        return violations
+
+    @staticmethod
+    def check_T11(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""\acknowledgement{} command instead of \begin{acknowledgements}."""
+        violations = []
+        stripped = _strip_comments(raw)
+        if re.search(r"\\acknowledgement\s*\{", stripped):
+            violations.append(Violation(
+                lineno, 0, "T11", "error",
+                "Use \\begin{acknowledgements} environment, "
+                "not \\acknowledgement{} command (affects formatting)",
+                "3.4",
+            ))
+        return violations
+
+    @staticmethod
+    def check_T12(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Colon before displayed equation — equations are part of sentences."""
+        violations = []
+        stripped = _strip_comments(raw)
+        # Check if this line starts a display math environment
+        display_envs = (
+            r"\\begin\{equation\*?\}",
+            r"\\begin\{align\*?\}",
+            r"\\begin\{gather\*?\}",
+            r"\\begin\{multline\*?\}",
+            r"\\begin\{eqnarray\*?\}",
+            r"\\begin\{flalign\*?\}",
+            r"\\\[",  # \[
+        )
+        is_display_start = any(re.search(p, stripped) for p in display_envs)
+        if is_display_start:
+            # Check previous line for trailing colon
+            prev = _strip_comments(ctx.prev_raw_line).rstrip()
+            if prev.endswith(":"):
+                violations.append(Violation(
+                    lineno, 0, "T12", "warning",
+                    "Colon before displayed equation \u2192 equations are "
+                    "part of sentences; remove the colon",
+                    "2.5",
+                ))
+        return violations
+
     # ===== Category 5: References & Citations ==============================
 
     @staticmethod
@@ -875,6 +1020,20 @@ class StyleChecker:
                     "remove dead text before submission",
                     "2.3.17",
                 ))
+        return violations
+
+    @staticmethod
+    def check_R05(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        """"arXiv e-prints" redundancy in bibliography entries."""
+        violations = []
+        stripped = _strip_comments(raw)
+        if re.search(r"arXiv\s+e-prints?", stripped, re.IGNORECASE):
+            violations.append(Violation(
+                lineno, 0, "R05", "warning",
+                '"arXiv e-prints, arXiv:..." is redundant \u2192 '
+                'use just "arXiv:..." (delete the \\journal line in .bib)',
+                "2.6",
+            ))
         return violations
 
     @staticmethod
@@ -967,6 +1126,35 @@ class StyleChecker:
             ))
         return violations
 
+    @staticmethod
+    def check_S05(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        """"the universe/galaxy/sun" should be capitalised when referring to ours."""
+        violations = []
+        # Only flag when the target word is lowercase after "the"
+        # "galaxy" omitted: "the galaxy" almost always refers to a specific
+        # galaxy under discussion, not the Milky Way.  Too many FPs.
+        targets = [
+            ("universe", "Universe"),
+            ("sun", "Sun"),
+            ("solar system", "Solar System"),
+        ]
+        for lower, upper in targets:
+            # Match "the <lowercase-word>" — case-sensitive for the target
+            pat = re.compile(r"\bthe\s+" + re.escape(lower) + r"\b")
+            for m in pat.finditer(text):
+                # Skip if preceded by "of the" in multiverse context etc.
+                before = text[max(0, m.start() - 20):m.start()]
+                if re.search(r"\b(a|another|different|parallel|observable)\s+$",
+                             before, re.IGNORECASE):
+                    continue
+                violations.append(Violation(
+                    lineno, m.start(), "S05", "warning",
+                    f'"the {lower}" \u2192 "the {upper}" when referring '
+                    f"to ours specifically",
+                    "3.3",
+                ))
+        return violations
+
 
 # ---------------------------------------------------------------------------
 # Rule registry
@@ -976,15 +1164,17 @@ class StyleChecker:
 _LINE_RULES: list[str] = [
     "check_N01", "check_N02", "check_N03", "check_N04",
     "check_N05", "check_N06", "check_N07", "check_N08",
-    "check_N09", "check_N10",
+    "check_N09", "check_N10", "check_N11", "check_N12",
     "check_E01", "check_E02", "check_E03", "check_E04",
     "check_E05", "check_E06", "check_E07", "check_E08",
     "check_U01", "check_U02", "check_U03", "check_U05",
     "check_U07",
     "check_T01", "check_T02", "check_T04", "check_T05",
-    "check_T06", "check_T08",
-    "check_R02", "check_R03",
+    "check_T06", "check_T08", "check_T09", "check_T10",
+    "check_T11", "check_T12",
+    "check_R02", "check_R03", "check_R05",
     "check_S01", "check_S02", "check_S03", "check_S04",
+    "check_S05",
 ]
 
 _CATEGORY_MAP = {
@@ -998,8 +1188,10 @@ _CATEGORY_MAP = {
 
 # Rules that need the raw line and operate before comment stripping
 _RAW_LINE_RULES = {"check_N01", "check_N02", "check_N03", "check_N04",
-                   "check_R03", "check_T01", "check_T02", "check_T05",
-                   "check_T06"}
+                   "check_R03", "check_R05",
+                   "check_T01", "check_T02", "check_T05",
+                   "check_T06", "check_T09", "check_T10",
+                   "check_T11", "check_T12"}
 
 
 # ---------------------------------------------------------------------------
@@ -1028,8 +1220,9 @@ def lint_file(
     checker = StyleChecker()
     violations: list[Violation] = []
 
+    prev_line = ""
     for i, raw_line in enumerate(lines, start=1):
-        ctx.update(raw_line)
+        ctx.update(raw_line, prev_line)
 
         # Skip preamble, verbatim, and math environments
         if ctx.in_preamble or ctx.in_verbatim:
@@ -1045,8 +1238,8 @@ def lint_file(
             if is_comment and rule_name != "check_R03":
                 continue
 
-            # Skip text rules in math environments (except T04/T05)
-            if ctx.in_math_env and rule_name not in {"check_T04", "check_T05"}:
+            # Skip text rules in math environments (except T04/T05/T12)
+            if ctx.in_math_env and rule_name not in {"check_T04", "check_T05", "check_T12"}:
                 continue
 
             # Some rules need the raw line
@@ -1058,6 +1251,8 @@ def lint_file(
             for v in results:
                 if severity_order.get(v.severity, 0) >= min_sev:
                     violations.append(v)
+
+        prev_line = raw_line
 
     # Document-level checks
     if not categories or "references" in categories:
