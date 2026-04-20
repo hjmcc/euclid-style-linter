@@ -102,8 +102,16 @@ class TexContext:
             self.env_stack.append(m.group(1))
         for m in _END_RE.finditer(line):
             env = m.group(1)
-            if self.env_stack and self.env_stack[-1] == env:
+            if not self.env_stack:
+                continue
+            if self.env_stack[-1] == env:
                 self.env_stack.pop()
+            elif env in self.env_stack:
+                # Mismatched \end{foo}: pop everything above the matching
+                # begin, then the matching begin itself, to keep the stack
+                # consistent rather than silently desyncing.
+                idx = len(self.env_stack) - 1 - self.env_stack[::-1].index(env)
+                del self.env_stack[idx:]
 
 
 # ---------------------------------------------------------------------------
@@ -111,12 +119,24 @@ class TexContext:
 # ---------------------------------------------------------------------------
 
 def _strip_comments(line: str) -> str:
-    """Remove LaTeX comment (% to end-of-line), respecting escaped \\%."""
+    """Remove LaTeX comment (% to end-of-line), respecting escaped \\%.
+
+    A % is escaped only when preceded by an odd number of backslashes:
+    ``\\%`` is escaped, but ``\\\\%`` is a literal backslash followed by a
+    comment.
+    """
     result = []
     i = 0
     while i < len(line):
-        if line[i] == "%" and (i == 0 or line[i - 1] != "\\"):
-            break
+        if line[i] == "%":
+            # Count contiguous backslashes immediately before this %
+            j = i - 1
+            backslashes = 0
+            while j >= 0 and line[j] == "\\":
+                backslashes += 1
+                j -= 1
+            if backslashes % 2 == 0:
+                break
         result.append(line[i])
         i += 1
     return "".join(result)
@@ -220,6 +240,15 @@ class StyleChecker:
             after_word = re.match(r"Euclid\s+(\w+)", context_after)
             if after_word and after_word.group(1) in proper_suffixes:
                 continue
+            # Is Euclid at the tail of a Title-Cased compound name?
+            # E.g. "Cosmology Likelihood for Observables in Euclid"
+            # (detected by a capitalised word followed by a small
+            # preposition immediately before Euclid).
+            if re.search(
+                r"\b[A-Z][A-Za-z]+\s+(?:in|of|for|with|on|to|from)\s+$",
+                context_before,
+            ):
+                continue
             # Is it preceded by \textit{ or \emph{?
             if re.search(r"\\textit\{$", context_before):
                 continue
@@ -302,6 +331,10 @@ class StyleChecker:
             # Skip if followed by a capitalised word (company/org name, e.g. "HE Space")
             after = cleaned[m.end():]
             if re.match(r"\s+[A-Z]", after):
+                continue
+            # Skip catalogue/star names where the letters are a prefix
+            # followed by digits, e.g. "HE 0107-5240", "HE~0107", "HE\,0107".
+            if re.match(r"(?:\s+|~|\\,)\d", after):
                 continue
             violations.append(Violation(
                 lineno, pos, "N04", "warning",
@@ -446,7 +479,8 @@ class StyleChecker:
         "coloring": "colouring",
         "customize": "customise",
         "defense": "defence",
-        "dialog": "dialogue",
+        # "dialog" omitted: valid in BrE for software/UI contexts
+        # ("dialog box"), where "dialogue" would be wrong.
         "favor": "favour",
         "favorable": "favourable",
         "favored": "favoured",
@@ -460,10 +494,10 @@ class StyleChecker:
         "initialized": "initialised",
         "judgment": "judgement",
         "labor": "labour",
-        "license": "licence",
+        # "license" omitted: in BrE the verb is "license" and the noun is
+        # "licence"; detecting noun/verb reliably is not possible here.
         "maneuver": "manoeuvre",
         "maximize": "maximise",
-        "minimize": "minimise",
         "minimize": "minimise",
         "modeling": "modelling",
         "modeled": "modelled",
@@ -796,6 +830,11 @@ class StyleChecker:
             char_before = check[m.start() - 1] if m.start() > 0 else ""
             if char_before.isalpha() or char_before == "}":
                 continue
+            # Skip catalogue/star names: UPPERCASE prefix followed by
+            # whitespace immediately before the digits, e.g. "HE 0107-5240",
+            # "SDSS J0100-1234", "2MASS 0451-23".
+            if re.search(r"\b[A-Z0-9]{2,}\s+$", before):
+                continue
             violations.append(Violation(
                 lineno, m.start(), "T02", "warning",
                 f'"{m.group(0)}" \u2192 use en-dash "{m.group(1)}--{m.group(2)}" '
@@ -809,16 +848,30 @@ class StyleChecker:
         """Math operators without backslash in math mode."""
         violations = []
         stripped = _strip_comments(raw)
-        # Find math regions and check for bare operators
-        for math_match in _INLINE_MATH_RE.finditer(stripped):
-            math_content = math_match.group(1)
-            for m in re.finditer(r"(?<!\\)\b(ln|log|sin|cos|tan|exp|det|min|max|lim)\s*[({\\]", math_content):
+        op_re = re.compile(
+            r"(?<!\\)\b(ln|log|sin|cos|tan|exp|det|min|max|lim)\s*[({\\]"
+        )
+
+        def scan(content: str, offset: int) -> None:
+            for m in op_re.finditer(content):
                 op = m.group(1)
                 violations.append(Violation(
-                    lineno, math_match.start() + m.start(), "T04", "warning",
+                    lineno, offset + m.start(), "T04", "warning",
                     f'Math operator "{op}" should use \\{op} in math mode',
                     "2.5.10",
                 ))
+
+        # Inline math: $...$, \(...\), \[...\]
+        for math_match in _INLINE_MATH_RE.finditer(stripped):
+            scan(math_match.group(1), math_match.start())
+        for math_match in _PAREN_MATH_RE.finditer(stripped):
+            # Strip leading \( and trailing \) for offset maths to line up
+            scan(math_match.group(0)[2:-2], math_match.start() + 2)
+        for math_match in _BRACKET_MATH_RE.finditer(stripped):
+            scan(math_match.group(0)[2:-2], math_match.start() + 2)
+        # Inside a display math environment, the whole line is math content.
+        if ctx.in_math_env:
+            scan(stripped, 0)
         return violations
 
     @staticmethod
@@ -882,21 +935,31 @@ class StyleChecker:
     def check_T08(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
         """Abbreviation at sentence start."""
         violations = []
-        # Check for abbreviated forms at the start of a sentence
-        # (after . or at line start following blank)
         stripped = _strip_comments(raw)
         # Common abbreviations that should be written out at sentence start
         abbrevs = r"(?:Sect\.|Fig\.|Eq\.|Tab\.|Ref\.|App\.)"
-        # At line start
+        # Line-start case: only a genuine sentence start if the previous
+        # non-blank line ends with sentence-terminating punctuation, or if
+        # the previous line is blank (paragraph break).  A wrapped line in
+        # the source is not a sentence boundary.
         m = re.match(r"^\s*(" + abbrevs + r")", stripped)
         if m:
-            violations.append(Violation(
-                lineno, m.start(1), "T08", "warning",
-                f'"{m.group(1)}" at sentence start — write out in full '
-                '(Section, Figure, Equation, etc.)',
-                "2.3.19",
-            ))
-        # After sentence-ending punctuation
+            prev = _strip_comments(ctx.prev_raw_line).rstrip()
+            prev_is_sentence_end = (not prev) or prev[-1] in ".?!"
+            # But "et al.", "e.g.", "i.e.", "cf.", "vs." end in "." without
+            # ending a sentence — check the last word.
+            if prev_is_sentence_end and prev:
+                tail = prev[-10:]
+                if re.search(r"\b(al|etc|e\.g|i\.e|cf|vs)\.\s*$", tail):
+                    prev_is_sentence_end = False
+            if prev_is_sentence_end:
+                violations.append(Violation(
+                    lineno, m.start(1), "T08", "warning",
+                    f'"{m.group(1)}" at sentence start — write out in full '
+                    '(Section, Figure, Equation, etc.)',
+                    "2.3.19",
+                ))
+        # After sentence-ending punctuation (same line)
         for m in re.finditer(r"\.\s+(" + abbrevs + r")", stripped):
             # Skip if previous word is an abbreviation itself (e.g. "et al. Fig.")
             before = stripped[max(0, m.start() - 10):m.start()]
@@ -1007,10 +1070,16 @@ class StyleChecker:
         violations = []
         stripped = raw.strip()
         if stripped.startswith("%"):
-            # Only flag if there's substantial text (not just %--- or % blank)
+            # Only flag if there's substantial prose (not just %--- or % blank)
             comment_text = stripped.lstrip("% \t")
-            # Skip short comments, dividers, TODO markers, and LaTeX directives
-            if (len(comment_text) > 40
+            # Heuristic: looks like real prose → at least four words and
+            # either ends/contains a full stop or is clearly long-form
+            # (>=8 words).  Catches short commented-out sentences like
+            # "% We remove this for now." while ignoring single-word
+            # notes and decorative dividers.
+            word_count = len(re.findall(r"\b\w+\b", comment_text))
+            has_period = "." in comment_text
+            if (word_count >= 4 and (has_period or word_count >= 8)
                     and not re.match(r"^[-=~*]+$", comment_text)
                     and not re.match(r"^(TODO|FIXME|NOTE|XXX|HACK)\b", comment_text, re.IGNORECASE)
                     and not re.match(r"^\\", comment_text)):
@@ -1186,14 +1255,6 @@ _CATEGORY_MAP = {
     "style": [r for r in _LINE_RULES if r.startswith("check_S")],
 }
 
-# Rules that need the raw line and operate before comment stripping
-_RAW_LINE_RULES = {"check_N01", "check_N02", "check_N03", "check_N04",
-                   "check_R03", "check_R05",
-                   "check_T01", "check_T02", "check_T05",
-                   "check_T06", "check_T09", "check_T10",
-                   "check_T11", "check_T12"}
-
-
 # ---------------------------------------------------------------------------
 # Main linting logic
 # ---------------------------------------------------------------------------
@@ -1242,11 +1303,7 @@ def lint_file(
             if ctx.in_math_env and rule_name not in {"check_T04", "check_T05", "check_T12"}:
                 continue
 
-            # Some rules need the raw line
-            if rule_name in _RAW_LINE_RULES:
-                results = method(i, raw_line, cleaned, ctx)
-            else:
-                results = method(i, raw_line, cleaned, ctx)
+            results = method(i, raw_line, cleaned, ctx)
 
             for v in results:
                 if severity_order.get(v.severity, 0) >= min_sev:

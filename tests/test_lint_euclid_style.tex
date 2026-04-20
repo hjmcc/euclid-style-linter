@@ -296,4 +296,39 @@ $^{1}$ INAF-Osservatorio, Via Frascati 33, I-00078 Roma, Italy\\ % EDGE: T05-aff
 % Edge: standalone noun "power law" must NOT trigger N12
 The relation is described by a power law with slope $\eta$. % EDGE: N12-noun
 
+% Edge: Euclid at the tail of a compound name must NOT trigger N01
+We use the Cosmology Likelihood for Observables in Euclid pipeline. % EDGE: N01-tail
+The Likelihood Tool for Euclid analyses are presented. % EDGE: N01-tail-tool
+
+% Edge: abbreviation on wrapped line (no sentence break) must NOT trigger T08
+The residuals are shown in
+Fig. 1 as red points. % EDGE: T08-wrapped
+
+% Genuine sentence start across lines: prev line ends with "."
+The analysis is complete.
+Fig. 1 shows the results. % EXPECT: T08
+
+% Edge: line after "et al." should NOT trigger T08 (ends in "." but not a sentence)
+As described by Smith et al.
+Fig. 2 illustrates the trend. % EDGE: T08-etal
+
+% Edge: catalogue/star name with HE+digits must NOT trigger N04
+The spectrum of HE 0107-5240 is well studied. % EDGE: N04-star
+
+% Edge: "dialog box" (software) must NOT trigger E01
+The dialog box prompts for a filename. % EDGE: E01-dialog
+
+% T04 in display math should be detected
+\begin{equation}
+y = log(x) + sin(x) % EXPECT: T04
+\end{equation}
+
+% T04 in \[...\] should be detected
+\[ z = cos(\theta) \] % EXPECT: T04
+
+% R03: short non-prose comment must NOT trigger
+% See note.
+% R03: long prose comment SHOULD trigger
+% We have removed this paragraph because the referee did not like it.
+
 \end{document}
