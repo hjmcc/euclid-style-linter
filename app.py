@@ -8,7 +8,7 @@ from pathlib import Path
 
 import gradio as gr
 
-from lint_euclid_style import lint_file, _CATEGORY_MAP
+from lint_euclid_style import __version__, lint_file, _CATEGORY_MAP
 
 ALL_CATS = list(_CATEGORY_MAP.keys())
 SEVERITY_ICON = {"error": "🔴", "warning": "🟡", "suggestion": "🔵"}
@@ -57,9 +57,10 @@ def run_linter(latex_source: str, min_severity: str, categories: list[str]) -> s
 
 with gr.Blocks(title="ECEB Style Linter") as demo:
     gr.Markdown(
-        "# 🔭 Euclid Style Linter\n"
-        "Check your LaTeX source against the **ECEB Style Guide V4.0** — "
-        "44 rules covering naming, British English, units, typesetting, references, and style."
+        f"# 🔭 Euclid Style Linter  \n"
+        f"*Linter version `v{__version__}`*\n\n"
+        f"Check your LaTeX source against the **ECEB Style Guide V4.0** — "
+        f"44 rules covering naming, British English, units, typesetting, references, and style."
     )
 
     with gr.Row():

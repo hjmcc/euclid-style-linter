@@ -151,6 +151,21 @@ Results: **100% precision** on non-debatable findings across all papers, with
 17 false-positive fixes applied during validation. See
 `tests/validation_report.md` for the full triage.
 
+## Versioning
+
+The linter follows [Semantic Versioning](https://semver.org):
+
+- **MAJOR** — ECEB style-guide version bump, rule removal/renaming, or
+  any CLI-incompatible change.
+- **MINOR** — new rules, new CLI flags, or behavioural changes that
+  may make a previously-clean paper newly report violations.
+- **PATCH** — false-positive fixes, bug fixes, refactoring with no
+  intended change to rule output.
+
+The current version is in `__version__` in `lint_euclid_style.py`
+(also reported by `python3 lint_euclid_style.py --version`). See
+[`CHANGELOG.md`](CHANGELOG.md) for release notes.
+
 ## License
 
 MIT

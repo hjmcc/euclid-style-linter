@@ -24,6 +24,8 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
+__version__ = "0.3.0"
+
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
@@ -1395,6 +1397,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="Lint a LaTeX file against the ECEB Style Guide V4.0.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     parser.add_argument("file", type=Path, help="Path to the .tex file to lint")
     parser.add_argument(
