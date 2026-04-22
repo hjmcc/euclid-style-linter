@@ -1,3 +1,14 @@
+---
+title: ECEB Style Linter
+emoji: 🔭
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # euclid-style-linter
 
 Lint LaTeX files against the [Euclid Consortium Editorial Board (ECEB) Style Guide V4.0](https://www.euclid-ec.org/).
