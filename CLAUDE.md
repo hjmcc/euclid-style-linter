@@ -76,7 +76,7 @@ The linter is a single-file, line-by-line processor with five layers:
    LaTeX-aware extraction of prose from raw source lines.
 2. **Context tracking** — `TexContext` class: maintains an environment stack
    (math, verbatim, tabular), preamble state, and document-level flags.
-3. **Rule methods** — `StyleChecker.check_N01` through `check_S05` (48 rules):
+3. **Rule methods** — `StyleChecker.check_N01` through `check_S05` (50 rules):
    each receives `(lineno, raw_line, cleaned_text, ctx)` and returns a list of
    `Violation` namedtuples.
 4. **Rule registry** — `_LINE_RULES`, `_RAW_LINE_RULES`, `_CATEGORY_MAP`:

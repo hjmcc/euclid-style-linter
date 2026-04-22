@@ -129,6 +129,10 @@ The dataset contains 1234567 individual measurements. % EXPECT: U08
 The 2024 release supersedes the 2018 catalogue. % EDGE: U08_year
 We targeted SDSS J012345 in the deep field. % EDGE: U08_id
 
+The galaxy density is $5\, 10^7$ per square degree. % EXPECT: U09
+The galaxy density is $5\cdot 10^7$ per square degree. % EXPECT: U09
+The galaxy density is $5\times 10^7$ per square degree. % CLEAN: U09
+
 % ====================================================================
 % TYPESETTING (T01, T02, T04, T05, T06, T08, T09, T10, T11, T12)
 % ====================================================================
@@ -173,6 +177,11 @@ x = y + z
 This was the first ''Stage-IV'' dark energy experiment. % EXPECT: T13
 This was the first ``Stage-IV'' dark energy experiment. % CLEAN: T13
 The so-called ``standard'' candles were observed. % EDGE: T13_closer
+
+The detector is sensitive at $E=1.5keV$ in this band. % EXPECT: T14
+The detector is sensitive at $E=1.5\,\mathrm{keV}$ in this band. % CLEAN: T14
+The line is at $\nu=1.4GHz$ for HI emission. % EXPECT: T14
+The size is about $1Mpc$ across the cluster. % EXPECT: T14
 
 % ====================================================================
 % REFERENCES & CITATIONS (R02, R03, R04, R05)

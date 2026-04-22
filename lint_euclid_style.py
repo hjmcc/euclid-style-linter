@@ -3,7 +3,7 @@
 Lint a LaTeX file against the Euclid Consortium Editorial Board (ECEB)
 Style Guide V4.0.
 
-Checks 48 rules covering naming/terminology, British English,
+Checks 50 rules covering naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and style-guide-
 specific conventions.  Reports violations with line number, rule ID,
 severity, and the relevant Style Guide section.
@@ -167,15 +167,20 @@ def _remove_math(text: str) -> str:
 _BRACE_GROUP = r"\{(?:[^{}]|\{[^{}]*\})*\}"
 
 
+_OPT_ARG = r"(?:\[[^\[\]]*\])?"
+
+
 def _remove_commands(text: str, commands: list[str]) -> str:
     """Remove content inside specific LaTeX commands like \\url{...}, \\texttt{...}.
 
-    Handles commands with up to two brace-delimited arguments (e.g. \\href{url}{text}).
+    Handles commands with an optional ``[...]`` argument and up to two
+    brace-delimited arguments (e.g. ``\\href{url}{text}``,
+    ``\\includegraphics[width=4cm]{file}``).
     """
     for cmd in commands:
-        # Match one or two brace groups after the command
         pattern = re.compile(
-            r"\\" + re.escape(cmd) + _BRACE_GROUP + r"(?:" + _BRACE_GROUP + r")?"
+            r"\\" + re.escape(cmd) + _OPT_ARG + _BRACE_GROUP
+            + r"(?:" + _BRACE_GROUP + r")?"
         )
         text = pattern.sub(" ", text)
     return text
@@ -872,6 +877,35 @@ class StyleChecker:
             ))
         return violations
 
+    @staticmethod
+    def check_U09(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Scientific notation in math should use \times, not \, or \cdot before 10^N."""
+        violations = []
+        stripped = _strip_comments(raw)
+        # Number, optional space, \,  or \cdot, optional space, 10^N
+        bad_re = re.compile(
+            r"(\d+(?:\.\d+)?)\s*\\(,|cdot)\s*10\s*\^"
+        )
+
+        def scan(content: str, offset: int) -> None:
+            for m in bad_re.finditer(content):
+                violations.append(Violation(
+                    lineno, offset + m.start(), "U09", "warning",
+                    f'Scientific notation "{m.group(1)}\\{m.group(2)} 10^..." '
+                    f'→ use "{m.group(1)}\\times 10^..."',
+                    "2.5.13",
+                ))
+
+        for mm in _INLINE_MATH_RE.finditer(stripped):
+            scan(mm.group(1), mm.start())
+        for mm in _PAREN_MATH_RE.finditer(stripped):
+            scan(mm.group(0)[2:-2], mm.start() + 2)
+        for mm in _BRACKET_MATH_RE.finditer(stripped):
+            scan(mm.group(0)[2:-2], mm.start() + 2)
+        if ctx.in_math_env:
+            scan(stripped, 0)
+        return violations
+
     # ===== Category 4: LaTeX Typesetting ===================================
 
     @staticmethod
@@ -1149,6 +1183,52 @@ class StyleChecker:
             ))
         return violations
 
+    @staticmethod
+    def check_T14(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Number directly attached to a unit in math (e.g. 1.5keV) — needs \, and roman."""
+        violations = []
+        stripped = _strip_comments(raw)
+        # Curated unit list — physical units that would be wrong-italic in math.
+        units = (
+            r"keV|MeV|GeV|TeV|eV|"
+            r"Hz|kHz|MHz|GHz|THz|"
+            r"Gpc|Mpc|kpc|pc|"
+            r"km|cm|mm|nm|"
+            r"erg|"
+            r"Jy|mJy|"
+            r"deg|arcmin|arcsec"
+        )
+        bad_re = re.compile(r"(\d+(?:\.\d+)?)(" + units + r")\b")
+
+        def scan(content: str, offset: int) -> None:
+            for m in bad_re.finditer(content):
+                num, unit = m.group(1), m.group(2)
+                violations.append(Violation(
+                    lineno, offset + m.start(), "T14", "warning",
+                    f'"{num}{unit}" in math: units must be roman with thin '
+                    f'space → "{num}\\,\\mathrm{{{unit}}}"',
+                    "2.2.6",
+                ))
+
+        for mm in _INLINE_MATH_RE.finditer(stripped):
+            scan(mm.group(1), mm.start())
+        for mm in _PAREN_MATH_RE.finditer(stripped):
+            scan(mm.group(0)[2:-2], mm.start() + 2)
+        for mm in _BRACKET_MATH_RE.finditer(stripped):
+            scan(mm.group(0)[2:-2], mm.start() + 2)
+        if ctx.in_math_env:
+            scan(stripped, 0)
+        # Also fire in prose: 1.5keV outside math should be $1.5\,\mathrm{keV}$
+        for m in bad_re.finditer(text):
+            num, unit = m.group(1), m.group(2)
+            violations.append(Violation(
+                lineno, m.start(), "T14", "warning",
+                f'"{num}{unit}" in prose: put in math mode with thin space → '
+                f'"${num}\\,\\mathrm{{{unit}}}$"',
+                "2.2.6",
+            ))
+        return violations
+
     # ===== Category 5: References & Citations ==============================
 
     @staticmethod
@@ -1339,10 +1419,10 @@ _LINE_RULES: list[str] = [
     "check_E01", "check_E02", "check_E03", "check_E04",
     "check_E05", "check_E06", "check_E07", "check_E08",
     "check_U01", "check_U02", "check_U03", "check_U05",
-    "check_U07", "check_U08",
+    "check_U07", "check_U08", "check_U09",
     "check_T01", "check_T02", "check_T04", "check_T05",
     "check_T06", "check_T08", "check_T09", "check_T10",
-    "check_T11", "check_T12", "check_T13",
+    "check_T11", "check_T12", "check_T13", "check_T14",
     "check_R02", "check_R03", "check_R05",
     "check_S01", "check_S02", "check_S03", "check_S04",
     "check_S05",
@@ -1404,8 +1484,9 @@ def lint_file(
             # Skip text rules in math environments (except rules that
             # specifically handle math content)
             if ctx.in_math_env and rule_name not in {
-                "check_T04", "check_T05", "check_T12",
+                "check_T04", "check_T05", "check_T12", "check_T14",
                 "check_N13", "check_N14",
+                "check_U09",
             }:
                 continue
 

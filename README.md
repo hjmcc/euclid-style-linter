@@ -13,7 +13,7 @@ license: mit
 
 Lint LaTeX files against the [Euclid Consortium Editorial Board (ECEB) Style Guide V4.0](https://www.euclid-ec.org/).
 
-Checks 48 rules across 6 categories: naming/terminology, British English,
+Checks 50 rules across 6 categories: naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and Euclid-specific
 conventions. Reports violations with line number, rule ID, severity, and the
 relevant Style Guide section.
@@ -98,6 +98,7 @@ Summary: 3 errors, 1 warnings (4 total)
 | U05 | Units | warning | Powers of 10: use `$3 \times 10^{5}$`, not `3e5` | 2.5.13 |
 | U07 | Units | warning | Thousands separator: use `\,` or `{,}`, not bare comma | 2.5.22 |
 | U08 | Units | warning | Integer > 4 digits in prose needs thin-space (`100\,000`) | 2.5.22 |
+| U09 | Units | warning | Scientific notation: use `\times`, not `\,` or `\cdot` before `10^N` | 2.5.13 |
 | T01 | Typesetting | warning | Straight double quotes -- use ` `` ` and `''` | 2.5.3 |
 | T02 | Typesetting | warning | Hyphen in number range -- use en-dash `--` | 2.5.4 |
 | T04 | Typesetting | warning | Math operators without backslash (e.g. `log` not `\log`) | 2.5.10 |
@@ -109,6 +110,7 @@ Summary: 3 errors, 1 warnings (4 total)
 | T11 | Typesetting | error | `\acknowledgement{}` command — use environment instead | 3.4 |
 | T12 | Typesetting | warning | Colon before displayed equation — equations are sentences | 2.5 |
 | T13 | Typesetting | warning | `''` used as opening quote (correct opener is `` `` ``) | 2.5.3 |
+| T14 | Typesetting | warning | Number directly attached to physical unit (e.g. `1.5keV`) | 2.2.6 |
 | R02 | References | warning | EC citation should use "Euclid Collaboration:" format | 2.6.7 |
 | R03 | References | suggestion | Commented-out text (arXiv source is public) | 2.3.17 |
 | R04 | References | suggestion | Missing `\AckEC` acknowledgements macro | 3.4 |
@@ -127,8 +129,8 @@ Filter rules by category with `--category`:
 |------|-------|
 | `naming` | N01--N14 |
 | `english` | E01--E08 |
-| `units` | U01, U02, U03, U05, U07, U08 |
-| `typesetting` | T01, T02, T04--T06, T08--T13 |
+| `units` | U01, U02, U03, U05, U07--U09 |
+| `typesetting` | T01, T02, T04--T06, T08--T14 |
 | `references` | R02--R05 |
 | `style` | S01--S05 |
 
