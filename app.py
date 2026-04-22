@@ -65,6 +65,11 @@ with gr.Blocks(title="ECEB Style Linter") as demo:
 
     with gr.Row():
         with gr.Column(scale=3):
+            file_input = gr.File(
+                label="Upload a .tex file (or paste below)",
+                file_types=[".tex", ".txt"],
+                type="binary",
+            )
             latex_input = gr.Textbox(
                 label="LaTeX source",
                 placeholder="\\documentclass{aa}\n\\begin{document}\n...\n\\end{document}",
@@ -85,6 +90,16 @@ with gr.Blocks(title="ECEB Style Linter") as demo:
             )
 
     output = gr.Markdown(label="Results")
+
+    def _load_file(data: bytes | None) -> str:
+        if not data:
+            return ""
+        try:
+            return data.decode("utf-8")
+        except UnicodeDecodeError:
+            return data.decode("latin-1", errors="replace")
+
+    file_input.change(fn=_load_file, inputs=file_input, outputs=latex_input)
 
     check_btn.click(fn=run_linter, inputs=[latex_input, severity, cats], outputs=output)
 
