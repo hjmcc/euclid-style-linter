@@ -3,7 +3,7 @@
 Lint a LaTeX file against the Euclid Consortium Editorial Board (ECEB)
 Style Guide V4.0.
 
-Checks 50 rules covering naming/terminology, British English,
+Checks 52 rules covering naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and style-guide-
 specific conventions.  Reports violations with line number, rule ID,
 severity, and the relevant Style Guide section.
@@ -184,6 +184,34 @@ def _remove_commands(text: str, commands: list[str]) -> str:
         )
         text = pattern.sub(" ", text)
     return text
+
+
+class Paragraph:
+    """A buffer of consecutive non-blank prose lines.
+
+    Paragraph rules see the joined text so they can match phrases that span
+    a source-line boundary (e.g. "two point\\ncorrelation function").
+    """
+
+    def __init__(self, lines: list[tuple[int, str]]):
+        self.lines = lines  # [(lineno, raw_line), ...]
+
+    @property
+    def joined(self) -> str:
+        return "\n".join(raw for _, raw in self.lines)
+
+    @property
+    def cleaned(self) -> str:
+        return "\n".join(_clean_text_line(raw) for _, raw in self.lines)
+
+    def lineno_of(self, pos: int) -> int:
+        """Map a 0-based offset in the cleaned/joined text to a source line."""
+        running = 0
+        for ln, raw in self.lines:
+            running += len(raw) + 1  # +1 for the joining \n
+            if pos < running:
+                return ln
+        return self.lines[-1][0]
 
 
 def _clean_text_line(line: str) -> str:
@@ -1405,6 +1433,59 @@ class StyleChecker:
                 ))
         return violations
 
+    # ===== Paragraph-level rules ===========================================
+
+    @staticmethod
+    def check_N15(para, ctx):
+        """Compound adjective spanning a line break (paragraph-level N12)."""
+        violations = []
+        text = para.cleaned
+        compounds = [
+            (r"\btwo\s+point\s+correlat\w*",   "two-point correlation"),
+            (r"\bpoint\s+like\b",              "point-like"),
+            (r"\bstar\s+forming\b",            "star-forming"),
+            (r"\bpower\s+law\s+spectr\w*",     "power-law spectr..."),
+            (r"\blarge\s+scale\s+structur\w*", "large-scale structure"),
+            (r"\bsmall\s+scale\s+structur\w*", "small-scale structure"),
+        ]
+        for pat, fix in compounds:
+            for m in re.finditer(pat, text, re.IGNORECASE):
+                if "\n" not in m.group(0):
+                    continue
+                ln = para.lineno_of(m.start())
+                phrase = re.sub(r"\s+", " ", m.group(0)).strip()
+                violations.append(Violation(
+                    ln, 0, "N15", "warning",
+                    'Compound adjective "' + phrase
+                    + '" spans a line break → hyphenate as "' + fix + '"',
+                    "2.4",
+                ))
+        return violations
+
+    @staticmethod
+    def check_N16(para, ctx):
+        """Common nouns over-capitalised after a proper noun (e.g. Fourier Transform)."""
+        violations = []
+        text = para.cleaned
+        pairs = [
+            (r"\bFourier\s+Transform(?:s|ed|ing)?\b", "Fourier transform"),
+            (r"\bFourier\s+Series\b",                 "Fourier series"),
+            (r"\bTaylor\s+Expansion\b",               "Taylor expansion"),
+            (r"\bTaylor\s+Series\b",                  "Taylor series"),
+            (r"\bGaussian\s+Distribution\b",          "Gaussian distribution"),
+        ]
+        for pat, fix in pairs:
+            for m in re.finditer(pat, text):
+                ln = para.lineno_of(m.start())
+                phrase = re.sub(r"\s+", " ", m.group(0)).strip()
+                violations.append(Violation(
+                    ln, 0, "N16", "warning",
+                    '"' + phrase + '": second word should be lower-case '
+                    + '→ "' + fix + '"',
+                    "2.4",
+                ))
+        return violations
+
 
 # ---------------------------------------------------------------------------
 # Rule registry
@@ -1428,13 +1509,23 @@ _LINE_RULES: list[str] = [
     "check_S05",
 ]
 
+_PARA_RULES: list[str] = [
+    "check_N15", "check_N16",
+]
+
 _CATEGORY_MAP = {
-    "naming": [r for r in _LINE_RULES if r.startswith("check_N")],
-    "english": [r for r in _LINE_RULES if r.startswith("check_E")],
-    "units": [r for r in _LINE_RULES if r.startswith("check_U")],
-    "typesetting": [r for r in _LINE_RULES if r.startswith("check_T")],
-    "references": [r for r in _LINE_RULES if r.startswith("check_R")],
-    "style": [r for r in _LINE_RULES if r.startswith("check_S")],
+    "naming": [r for r in _LINE_RULES if r.startswith("check_N")]
+              + [r for r in _PARA_RULES if r.startswith("check_N")],
+    "english": [r for r in _LINE_RULES if r.startswith("check_E")]
+               + [r for r in _PARA_RULES if r.startswith("check_E")],
+    "units": [r for r in _LINE_RULES if r.startswith("check_U")]
+             + [r for r in _PARA_RULES if r.startswith("check_U")],
+    "typesetting": [r for r in _LINE_RULES if r.startswith("check_T")]
+                   + [r for r in _PARA_RULES if r.startswith("check_T")],
+    "references": [r for r in _LINE_RULES if r.startswith("check_R")]
+                  + [r for r in _PARA_RULES if r.startswith("check_R")],
+    "style": [r for r in _LINE_RULES if r.startswith("check_S")]
+             + [r for r in _PARA_RULES if r.startswith("check_S")],
 }
 
 # ---------------------------------------------------------------------------
@@ -1456,12 +1547,27 @@ def lint_file(
         for cat in categories:
             active_rules.extend(_CATEGORY_MAP.get(cat, []))
     else:
-        active_rules = list(_LINE_RULES)
+        active_rules = list(_LINE_RULES) + list(_PARA_RULES)
+
+    active_line = [r for r in active_rules if r in _LINE_RULES]
+    active_para = [r for r in active_rules if r in _PARA_RULES]
 
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     ctx = TexContext()
     checker = StyleChecker()
     violations: list[Violation] = []
+
+    para_buffer: list[tuple[int, str]] = []
+
+    def flush_paragraph() -> None:
+        if not para_buffer:
+            return
+        para = Paragraph(list(para_buffer))
+        for rule_name in active_para:
+            for v in getattr(checker, rule_name)(para, ctx):
+                if severity_order.get(v.severity, 0) >= min_sev:
+                    violations.append(v)
+        para_buffer.clear()
 
     prev_line = ""
     for i, raw_line in enumerate(lines, start=1):
@@ -1469,12 +1575,21 @@ def lint_file(
 
         # Skip preamble, verbatim, and math environments
         if ctx.in_preamble or ctx.in_verbatim:
+            flush_paragraph()
             continue
 
         is_comment = _is_comment_line(raw_line)
         cleaned = _clean_text_line(raw_line)
 
-        for rule_name in active_rules:
+        # Paragraph buffering: accumulate prose lines, flush at boundaries
+        # (blank line, comment-only line, math environment, tabular).
+        if (raw_line.strip() and not is_comment
+                and not ctx.in_math_env and not ctx.in_tabular):
+            para_buffer.append((i, raw_line))
+        else:
+            flush_paragraph()
+
+        for rule_name in active_line:
             method = getattr(checker, rule_name)
 
             # For comment lines, only run R03
@@ -1497,6 +1612,9 @@ def lint_file(
                     violations.append(v)
 
         prev_line = raw_line
+
+    # End-of-file flush
+    flush_paragraph()
 
     # Document-level checks
     if not categories or "references" in categories:

@@ -13,7 +13,7 @@ license: mit
 
 Lint LaTeX files against the [Euclid Consortium Editorial Board (ECEB) Style Guide V4.0](https://www.euclid-ec.org/).
 
-Checks 50 rules across 6 categories: naming/terminology, British English,
+Checks 52 rules across 6 categories: naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and Euclid-specific
 conventions. Reports violations with line number, rule ID, severity, and the
 relevant Style Guide section.
@@ -84,6 +84,8 @@ Summary: 3 errors, 1 warnings (4 total)
 | N12 | Naming | warning | Compound adjective missing hyphen ("point like" etc.) | 2.4 |
 | N13 | Naming | warning | `<x>` in math should be `\langle x \rangle` or `\ave{x}` | 2.5.10 |
 | N14 | Naming | warning | `>>` / `<<` in math should be `\gg` / `\ll` | 2.5.10 |
+| N15 | Naming | warning | Compound adjective spanning a line break (paragraph-level) | 2.4 |
+| N16 | Naming | warning | Common noun over-capitalised after proper noun ("Fourier Transform") | 2.4 |
 | E01 | British English | error | US spellings that should be British (50+ words) | 2.4.1 |
 | E02 | British English | error | "percent" should be "per cent" | 2.4.1 |
 | E03 | British English | error | "gray" should be "grey" | 2.4.1 |
@@ -127,7 +129,7 @@ Filter rules by category with `--category`:
 
 | Flag | Rules |
 |------|-------|
-| `naming` | N01--N14 |
+| `naming` | N01--N16 |
 | `english` | E01--E08 |
 | `units` | U01, U02, U03, U05, U07--U09 |
 | `typesetting` | T01, T02, T04--T06, T08--T14 |
