@@ -3,7 +3,7 @@
 Lint a LaTeX file against the Euclid Consortium Editorial Board (ECEB)
 Style Guide V4.0.
 
-Checks 44 rules covering naming/terminology, British English,
+Checks 48 rules covering naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and style-guide-
 specific conventions.  Reports violations with line number, rule ID,
 severity, and the relevant Style Guide section.
@@ -465,6 +465,61 @@ class StyleChecker:
                 ))
         return violations
 
+    @staticmethod
+    def check_N13(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Use <x> as ensemble-average in math — use \langle x \rangle or \ave{x}."""
+        violations = []
+        stripped = _strip_comments(raw)
+        # Matches <identifier> but NOT <<, >>, <=, >=, <- or similar.
+        mean_re = re.compile(r"(?<![<=])<([A-Za-z]\w*)>(?![>=])")
+
+        def scan(content: str, offset: int) -> None:
+            for m in mean_re.finditer(content):
+                violations.append(Violation(
+                    lineno, offset + m.start(), "N13", "warning",
+                    f'"<{m.group(1)}>" in math → use '
+                    f'\\langle {m.group(1)} \\rangle or \\ave{{{m.group(1)}}}',
+                    "2.5.10",
+                ))
+
+        for mm in _INLINE_MATH_RE.finditer(stripped):
+            scan(mm.group(1), mm.start())
+        for mm in _PAREN_MATH_RE.finditer(stripped):
+            scan(mm.group(0)[2:-2], mm.start() + 2)
+        for mm in _BRACKET_MATH_RE.finditer(stripped):
+            scan(mm.group(0)[2:-2], mm.start() + 2)
+        if ctx.in_math_env:
+            scan(stripped, 0)
+        return violations
+
+    @staticmethod
+    def check_N14(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r""">> or << in math should be \gg or \ll."""
+        violations = []
+        stripped = _strip_comments(raw)
+        # Triple-or-more are decorative (e.g. ">>>") — ignore to reduce FPs.
+        gg_re = re.compile(r"(?<![<>])(<<|>>)(?![<>])")
+
+        def scan(content: str, offset: int) -> None:
+            for m in gg_re.finditer(content):
+                op = m.group(1)
+                fix = r"\gg" if op == ">>" else r"\ll"
+                violations.append(Violation(
+                    lineno, offset + m.start(), "N14", "warning",
+                    f'"{op}" in math → use {fix}',
+                    "2.5.10",
+                ))
+
+        for mm in _INLINE_MATH_RE.finditer(stripped):
+            scan(mm.group(1), mm.start())
+        for mm in _PAREN_MATH_RE.finditer(stripped):
+            scan(mm.group(0)[2:-2], mm.start() + 2)
+        for mm in _BRACKET_MATH_RE.finditer(stripped):
+            scan(mm.group(0)[2:-2], mm.start() + 2)
+        if ctx.in_math_env:
+            scan(stripped, 0)
+        return violations
+
     # ===== Category 2: British English =====================================
 
     # US -> UK spelling pairs (lowercase); checked case-insensitively
@@ -788,6 +843,35 @@ class StyleChecker:
             ))
         return violations
 
+    @staticmethod
+    def check_U08(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Integers > 4 digits in prose need a thousands separator (\,)."""
+        violations = []
+        # Use the cleaned text so math, \cite{...}, \ref{...}, \url{...},
+        # \label{...} etc. are already stripped.
+        for m in re.finditer(r"(?<![\w\-.])\d{5,}(?![\w\-.])", text):
+            digits = m.group(0)
+            # Skip if a thousands marker is right next to the match (\, or {,})
+            ctx_around = text[max(0, m.start() - 3):m.end() + 3]
+            if "\\," in ctx_around or "{,}" in ctx_around:
+                continue
+            # Group digits from the right in threes:
+            # "100000" → "100\,000", "1234567" → "1\,234\,567".
+            parts = []
+            i = len(digits)
+            while i > 0:
+                j = max(0, i - 3)
+                parts.append(digits[j:i])
+                i = j
+            fix = "\\,".join(reversed(parts))
+            violations.append(Violation(
+                lineno, m.start(), "U08", "warning",
+                f'Integer "{digits}" > 4 digits → use thin-space separator '
+                f'"{fix}"',
+                "2.5.22",
+            ))
+        return violations
+
     # ===== Category 4: LaTeX Typesetting ===================================
 
     @staticmethod
@@ -1050,6 +1134,21 @@ class StyleChecker:
                 ))
         return violations
 
+    @staticmethod
+    def check_T13(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Two right-quotes '' used as opener (correct opener is ``)."""
+        violations = []
+        # Opener `` ''text'' `` — '' preceded by non-word, followed by alnum.
+        # The cleaned text has already had math, url, href, texttt stripped.
+        for m in re.finditer(r"(?<!\w)''(?=[A-Za-z0-9])", text):
+            violations.append(Violation(
+                lineno, m.start(), "T13", "warning",
+                "Opening quote '' is two right-quotes — "
+                "use `` (two backticks) for the opener",
+                "2.5.3",
+            ))
+        return violations
+
     # ===== Category 5: References & Citations ==============================
 
     @staticmethod
@@ -1236,13 +1335,14 @@ _LINE_RULES: list[str] = [
     "check_N01", "check_N02", "check_N03", "check_N04",
     "check_N05", "check_N06", "check_N07", "check_N08",
     "check_N09", "check_N10", "check_N11", "check_N12",
+    "check_N13", "check_N14",
     "check_E01", "check_E02", "check_E03", "check_E04",
     "check_E05", "check_E06", "check_E07", "check_E08",
     "check_U01", "check_U02", "check_U03", "check_U05",
-    "check_U07",
+    "check_U07", "check_U08",
     "check_T01", "check_T02", "check_T04", "check_T05",
     "check_T06", "check_T08", "check_T09", "check_T10",
-    "check_T11", "check_T12",
+    "check_T11", "check_T12", "check_T13",
     "check_R02", "check_R03", "check_R05",
     "check_S01", "check_S02", "check_S03", "check_S04",
     "check_S05",
@@ -1301,8 +1401,12 @@ def lint_file(
             if is_comment and rule_name != "check_R03":
                 continue
 
-            # Skip text rules in math environments (except T04/T05/T12)
-            if ctx.in_math_env and rule_name not in {"check_T04", "check_T05", "check_T12"}:
+            # Skip text rules in math environments (except rules that
+            # specifically handle math content)
+            if ctx.in_math_env and rule_name not in {
+                "check_T04", "check_T05", "check_T12",
+                "check_N13", "check_N14",
+            }:
                 continue
 
             results = method(i, raw_line, cleaned, ctx)
