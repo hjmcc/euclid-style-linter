@@ -10,6 +10,34 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
+## 0.5.0 — 2026-05-24
+
+UX overhaul of the terminal and Gradio output to make scanning long
+reports easier.  Rule logic and JSON output are unchanged.
+
+### Changed
+
+- **Terminal output** now groups findings by severity
+  (errors → warnings → suggestions) instead of one flat
+  chronological list.  Each finding is followed by ±1 line of source
+  context with a caret pointing at the offending column.  A trailing
+  `By rule:` footer lists rule IDs by frequency (top offenders first)
+  so you can see at a glance whether you have one systemic problem
+  or many independent ones.
+- **Gradio app** mirrors the same layout: sections per severity, a
+  rule-frequency line at the top, and an HTML context block per
+  finding with the offending character highlighted.
+
+### Added
+
+- `--flat` CLI flag — restore the legacy line-ordered output.
+- `--no-context` CLI flag — omit the ±1 line source-context snippet.
+
+### Notes
+
+- JSON output (`--json`) is unchanged for stability of CI/editor
+  consumers.
+
 ## 0.4.1 — 2026-05-24
 
 False-positive fixes from a user-reported review of the linter's

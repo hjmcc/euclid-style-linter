@@ -43,6 +43,12 @@ python3 lint_euclid_style.py --json paper.tex
 
 # Check only specific categories
 python3 lint_euclid_style.py --category naming --category english paper.tex
+
+# Legacy line-ordered output (no severity grouping)
+python3 lint_euclid_style.py --flat paper.tex
+
+# Suppress the ±1 line source context shown below each finding
+python3 lint_euclid_style.py --no-context paper.tex
 ```
 
 ### Exit codes
@@ -55,16 +61,33 @@ python3 lint_euclid_style.py --category naming --category english paper.tex
 
 ### Example output
 
+Findings are grouped by severity (errors → warnings → suggestions),
+with ±1 line of source context and a caret pointing at the offending
+column. A "By rule" footer surfaces your top offenders:
+
 ```
 paper.tex
 
+  ERRORS  (2)
   Line 47   [E01] ERROR      US spelling "color" → British "colour" (Sect. 2.4.1)
-  Line 112  [N05] ERROR      "dataset" → "data set" (two words, no hyphen) (Sect. 2.4.34)
-  Line 203  [U01] ERROR      "km/s" → use exponent notation "km\,s$^{-1}$" (Sect. 2.2.8)
-  Line 15   [N01] WARNING    "Euclid" should be italicised as \Euclid or \textit{Euclid} (Sect. 3.6)
+           46 │ The previous line.
+        →  47 │ The color is wrong.
+              │     ^
+           48 │ Next line.
 
-Summary: 3 errors, 1 warnings (4 total)
+  Line 112  [N05] ERROR      "dataset" → "data set" (two words, no hyphen) (Sect. 2.4.34)
+           ...
+
+  WARNINGS  (1)
+  Line 15   [N01] WARNING    "Euclid" should be italicised as \Euclid or \textit{Euclid} (Sect. 3.6)
+           ...
+
+Summary: 2 errors, 1 warnings (3 total)
+By rule: E01 ×1, N05 ×1, N01 ×1
 ```
+
+Use `--flat` for the legacy line-ordered output, or `--no-context` to
+omit the source snippets.
 
 ## Rules
 

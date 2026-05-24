@@ -24,7 +24,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -1656,39 +1656,141 @@ _COLOURS = {
 }
 
 
-def _format_terminal(violations: list[Violation], path: Path) -> str:
-    """Format violations for coloured terminal output."""
+def _render_context(
+    src_lines: list[str], lineno: int, col: int, width: int = 100
+) -> list[str]:
+    r"""Render \xb11 line of source context with a caret pointing at ``col``.
+
+    Returns a list of pre-formatted strings (one per visual line) or an
+    empty list if ``lineno`` is 0 (document-level) or out of range.
+    """
+    if lineno <= 0 or not src_lines:
+        return []
+    dim = _COLOURS["dim"]
+    reset = _COLOURS["reset"]
+    out: list[str] = []
+    for ln in (lineno - 1, lineno, lineno + 1):
+        if not (1 <= ln <= len(src_lines)):
+            continue
+        content = src_lines[ln - 1].rstrip("\n").expandtabs(4)
+        truncated = False
+        if len(content) > width:
+            content = content[:width - 1]
+            truncated = True
+        is_target = ln == lineno
+        gutter_mark = "\u2192" if is_target else " "  # \u2192 arrow
+        prefix = f"      {gutter_mark} {ln:>4} \u2502 "  # \u2502
+        if is_target:
+            out.append(f"{prefix}{content}{'\u2026' if truncated else ''}")
+            # Caret line \u2014 points at the offending column.  The column
+            # value is 0-based on the original (un-expanded) line; for
+            # most violations this lines up well enough after tab
+            # expansion that the caret is visually useful.
+            if 0 <= col < width:
+                caret = f"{dim}             \u2502 {' ' * col}^{reset}"
+                out.append(caret)
+        else:
+            out.append(
+                f"{dim}{prefix}{content}{'\u2026' if truncated else ''}{reset}"
+            )
+    return out
+
+
+def _format_terminal(
+    violations: list[Violation],
+    path: Path,
+    src_lines: list[str] | None = None,
+    flat: bool = False,
+    show_context: bool = True,
+) -> str:
+    """Format violations for coloured terminal output.
+
+    Groups by severity (error \u2192 warning \u2192 suggestion) by default.
+    Pass ``flat=True`` for the legacy line-ordered output.  When
+    ``show_context`` and ``src_lines`` are provided, each finding is
+    followed by \xb11 line of source with a caret at the column.
+    """
     if not violations:
         return f"\u2713 {path}: no issues found\n"
 
-    lines = [f"\n{_COLOURS['bold']}{path}{_COLOURS['reset']}\n"]
-    for v in sorted(violations, key=lambda x: (x.line, x.col)):
+    reset = _COLOURS["reset"]
+    rule_colour = _COLOURS["rule"]
+    dim = _COLOURS["dim"]
+
+    def _render_one(v: Violation) -> list[str]:
         sev_colour = _COLOURS.get(v.severity, "")
-        reset = _COLOURS["reset"]
-        rule_colour = _COLOURS["rule"]
-        dim = _COLOURS["dim"]
         line_str = f"  Line {v.line:<5}" if v.line > 0 else "  Doc   "
-        lines.append(
+        head = (
             f"{line_str}{rule_colour}[{v.rule_id}]{reset} "
             f"{sev_colour}{v.severity.upper():<10}{reset} "
             f"{v.message} "
             f"{dim}(Sect. {v.sg_section}){reset}"
         )
+        out = [head]
+        if show_context and src_lines is not None:
+            out.extend(_render_context(src_lines, v.line, v.col))
+        return out
 
-    # Summary
+    out_lines: list[str] = [f"\n{_COLOURS['bold']}{path}{_COLOURS['reset']}\n"]
+
+    if flat:
+        for v in sorted(violations, key=lambda x: (x.line, x.col)):
+            out_lines.extend(_render_one(v))
+            if show_context:
+                out_lines.append("")
+    else:
+        sev_order = ("error", "warning", "suggestion")
+        sev_label = {
+            "error":      f"{_COLOURS['error']}ERRORS{reset}",
+            "warning":    f"{_COLOURS['warning']}WARNINGS{reset}",
+            "suggestion": f"{_COLOURS['suggestion']}SUGGESTIONS{reset}",
+        }
+        for sev in sev_order:
+            group = [v for v in violations if v.severity == sev]
+            if not group:
+                continue
+            out_lines.append(f"  {sev_label[sev]}  ({len(group)})")
+            for v in sorted(group, key=lambda x: (x.line, x.col)):
+                out_lines.extend(_render_one(v))
+                if show_context:
+                    out_lines.append("")
+            if not show_context:
+                out_lines.append("")
+
+    # Severity summary
     counts = {"error": 0, "warning": 0, "suggestion": 0}
     for v in violations:
         counts[v.severity] = counts.get(v.severity, 0) + 1
     total = len(violations)
     summary_parts = []
     if counts["error"]:
-        summary_parts.append(f"{_COLOURS['error']}{counts['error']} errors{_COLOURS['reset']}")
+        summary_parts.append(
+            f"{_COLOURS['error']}{counts['error']} errors{reset}"
+        )
     if counts["warning"]:
-        summary_parts.append(f"{_COLOURS['warning']}{counts['warning']} warnings{_COLOURS['reset']}")
+        summary_parts.append(
+            f"{_COLOURS['warning']}{counts['warning']} warnings{reset}"
+        )
     if counts["suggestion"]:
-        summary_parts.append(f"{_COLOURS['suggestion']}{counts['suggestion']} suggestions{_COLOURS['reset']}")
-    lines.append(f"\nSummary: {', '.join(summary_parts)} ({total} total)\n")
-    return "\n".join(lines)
+        summary_parts.append(
+            f"{_COLOURS['suggestion']}{counts['suggestion']} suggestions{reset}"
+        )
+    out_lines.append(f"Summary: {', '.join(summary_parts)} ({total} total)")
+
+    # Rule-frequency footer (top offenders first)
+    rule_counts: dict[str, int] = {}
+    for v in violations:
+        rule_counts[v.rule_id] = rule_counts.get(v.rule_id, 0) + 1
+    if rule_counts:
+        ordered = sorted(rule_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        freq = ", ".join(
+            f"{rule_colour}{rid}{reset} \u00d7{n}" for rid, n in ordered
+        )
+        out_lines.append(f"By rule: {freq}\n")
+    else:
+        out_lines.append("")
+
+    return "\n".join(out_lines)
 
 
 def _format_json(violations: list[Violation], path: Path) -> str:
@@ -1739,6 +1841,16 @@ def main():
         choices=list(_CATEGORY_MAP.keys()),
         help="Only check rules in this category (can be repeated)",
     )
+    parser.add_argument(
+        "--flat",
+        action="store_true",
+        help="Legacy line-ordered output (don't group by severity)",
+    )
+    parser.add_argument(
+        "--no-context",
+        action="store_true",
+        help="Omit the \xb11 line source context shown below each finding",
+    )
     args = parser.parse_args()
 
     if not args.file.exists():
@@ -1750,7 +1862,16 @@ def main():
     if args.json:
         print(_format_json(violations, args.file))
     else:
-        print(_format_terminal(violations, args.file))
+        src_lines = (
+            args.file.read_text(encoding="utf-8", errors="replace").splitlines()
+            if not args.no_context else None
+        )
+        print(_format_terminal(
+            violations, args.file,
+            src_lines=src_lines,
+            flat=args.flat,
+            show_context=not args.no_context,
+        ))
 
     # Return codes: 0 = clean, 1 = warnings/suggestions only, 2 = errors
     has_errors = any(v.severity == "error" for v in violations)
