@@ -24,7 +24,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -226,6 +226,7 @@ def _clean_text_line(line: str) -> str:
          "Cref", "cite", "citep", "citet", "citealt", "citeauthor",
          "citeyear", "eqref", "pageref", "input", "include",
          "usepackage", "graphicspath", "SI", "si", "ang",
+         "num", "numlist", "numrange", "qty", "qtylist", "qtyrange",
          "begin", "end"],
     )
     return text
@@ -265,6 +266,17 @@ class StyleChecker:
         ]
         # Skip if the Euclid on this line is via \Euclid or \textit{Euclid}
         stripped = _strip_comments(raw)
+        # Blank out graphics-command bodies (filenames may contain "Euclid"
+        # as a literal path component, not as a mission reference).  Use a
+        # length-preserving substitution so match positions still align
+        # with the original line for column reporting.
+        graphics_re = re.compile(
+            r"\\(?:includegraphics(?:\[[^\]]*\])?|graphicspath)"
+            r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}"
+        )
+        stripped = graphics_re.sub(
+            lambda mm: " " * len(mm.group(0)), stripped
+        )
         # Find bare 'Euclid' occurrences not preceded by macro backslash
         for m in re.finditer(r"(?<!\\)(?<!\{)\bEuclid\b", stripped):
             pos = m.start()
@@ -900,7 +912,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "U08", "warning",
                 f'Integer "{digits}" > 4 digits → use thin-space separator '
-                f'"{fix}"',
+                f'"{fix}" or \\num{{{digits}}} (siunitx)',
                 "2.5.22",
             ))
         return violations
@@ -978,10 +990,13 @@ class StyleChecker:
             char_before = check[m.start() - 1] if m.start() > 0 else ""
             if char_before.isalpha() or char_before == "}":
                 continue
-            # Skip catalogue/star names: UPPERCASE prefix followed by
-            # whitespace immediately before the digits, e.g. "HE 0107-5240",
-            # "SDSS J0100-1234", "2MASS 0451-23".
-            if re.search(r"\b[A-Z0-9]{2,}\s+$", before):
+            # Skip catalogue/star names: an UPPERCASE acronym (HE, NGC,
+            # SDSS, 2MASS) or a Title-case catalogue prefix (Abell,
+            # Hickson, Markarian, Zwicky) followed by whitespace
+            # immediately before the digits.
+            if re.search(
+                r"(?:\b[A-Z0-9]{2,}|\b[A-Z][a-z]+)\s+$", before
+            ):
                 continue
             violations.append(Violation(
                 lineno, m.start(), "T02", "warning",

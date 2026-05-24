@@ -142,8 +142,8 @@ Filter rules by category with `--category`:
 python3 -m pytest tests/ -v
 ```
 
-The test suite includes 114 regression tests: 45 expected violations, 44 clean
-counterparts, 27 edge cases, and 1 document-level rule. All tests verify both
+The test suite includes 158 regression tests: 62 expected violations, 54 clean
+counterparts, 42 edge cases, and 2 document-level rules. All tests verify both
 that violations fire where expected and that false positives are suppressed.
 
 ## Claude Code integration

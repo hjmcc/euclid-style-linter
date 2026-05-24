@@ -10,6 +10,35 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
+## 0.4.1 — 2026-05-24
+
+False-positive fixes from a user-reported review of the linter's
+output.
+
+### Fixed
+
+- **N01** — no longer flag `Euclid` when it appears inside an
+  `\includegraphics{...}` or `\graphicspath{...}` filename or path
+  (e.g. `\includegraphics{Figures/Euclid.pdf}`). Graphics-command
+  bodies are now blanked out before the rule scans the line.
+- **T02** — broaden the catalogue-name exception to accept Title-case
+  prefixes (e.g. `Abell 1689-23`, `Hickson 92-3`, `Markarian 421-12`)
+  in addition to all-caps prefixes (`NGC`, `ESO`, `SDSS`, `2MASS`).
+- **U08** — `\num{15000}`, `\qty{15000}{km}` etc. (siunitx number
+  macros) are no longer flagged. `num`, `numlist`, `numrange`, `qty`,
+  `qtylist`, `qtyrange` were added to the command-strip list used by
+  `_clean_text_line`.
+
+### Changed
+
+- **U08** — suggestion text now mentions `\num{N}` (siunitx) as an
+  alternative to the `\,` thin-space form.
+
+### Added
+
+- Six new EDGE regression markers covering the three fixes above.
+  Test count: 152 → 158.
+
 ## 0.3.0 — 2026-04-20
 
 Incorporates feedback from an Euclid Consortium Editorial Board (ECEB)

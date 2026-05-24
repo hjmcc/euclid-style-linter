@@ -370,4 +370,16 @@ y = log(x) + sin(x) % EXPECT: T04
 % R03: long prose comment SHOULD trigger
 % We have removed this paragraph because the referee did not like it.
 
+% Edge: "Euclid" inside \includegraphics{} filename must NOT trigger N01
+\includegraphics[width=0.5\textwidth]{path/Euclid-image.png} % EDGE: N01-graphics-path
+\includegraphics{Figures/Euclid.pdf} % EDGE: N01-graphics-bare
+
+% Edge: mixed-case catalogue prefix (Abell, Hickson) must NOT trigger T02
+The cluster Abell 1689-23 is a strong lens. % EDGE: T02-abell
+Hickson 92-3 is a compact group. % EDGE: T02-hickson
+
+% Edge: \num{} from siunitx must NOT trigger U08
+We detect \num{15000} galaxies in the deep field. % EDGE: U08-num
+The catalogue contains \num{1234567} sources. % EDGE: U08-num-large
+
 \end{document}
