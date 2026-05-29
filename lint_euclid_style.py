@@ -24,7 +24,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 # ---------------------------------------------------------------------------
 # Data structures

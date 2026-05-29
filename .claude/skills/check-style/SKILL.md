@@ -86,14 +86,14 @@ End with a summary count: `N critical, M warnings, K suggestions`.
 
 ## Rule categories
 
-The linter checks 6 categories with 44 rules:
+The linter checks 6 categories with 52 rules:
 
 | Category | ID prefix | Examples |
 |----------|-----------|----------|
-| Naming & Terminology | N01-N12 | Euclid italicisation, instrument names, data set, compound hyphens |
+| Naming & Terminology | N01-N16 | Euclid italicisation, instrument names, data set, compound hyphens, ensemble-average notation, over-capitalised nouns |
 | British English | E01-E08 | US→UK spellings, per cent, catalogue |
-| Units & Numbers | U01-U07 | Exponent notation, thin spaces, thousands separator |
-| LaTeX Typesetting | T01-T12 | TeX quotes, en-dashes, paragraph breaks, figure stretching |
+| Units & Numbers | U01-U09 | Exponent notation, thin spaces, thousands separator, scientific notation (\times) |
+| LaTeX Typesetting | T01-T14 | TeX quotes, en-dashes, paragraph breaks, figure stretching, number+unit spacing |
 | References & Citations | R02-R05 | EC citation format, \AckEC, commented text, arXiv redundancy |
 | Style Guide Specific | S01-S05 | Dec/RA, data plural, waveband italics, Universe capitalisation |
 
@@ -122,5 +122,7 @@ The linter checks 6 categories with 44 rules:
 - The linter script is at `lint_euclid_style.py` (top-level)
 - Reference: ECEB Style Guide V4.0
 - Some rules are warnings because they have legitimate exceptions
-- The `--category` flag can focus on specific rule groups
-- Return code: 0 = clean, 1 = warnings only, 2 = errors found
+- The `--category` flag focuses on specific rule groups; `--severity` filters by level
+- Terminal output groups findings by severity, shows source-line context, and ends
+  with a rule-frequency footer (v0.5.0)
+- Return code: 0 = clean, 1 = warnings/suggestions only, 2 = errors found

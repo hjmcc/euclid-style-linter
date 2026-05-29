@@ -10,6 +10,23 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
+## 0.5.1 — 2026-05-29
+
+Documentation-only release. No change to rule logic, CLI, or output.
+
+### Fixed
+
+- **`check-style` skill** (`SKILL.md`) was stale against v0.5.0: it
+  advertised "44 rules" and outdated category ranges (N01-N12,
+  U01-U07, T01-T12).  Corrected to **52 rules** with current ranges
+  (N01-N16, U01-U09, T01-T14) and refreshed examples for the newer
+  rules.  Documented the `--severity` flag and the v0.5.0 terminal
+  output behaviour (severity grouping, source context, `By rule:`
+  footer).
+- Confirmed `README.md` and `CLAUDE.md` already matched the true
+  count of 52 rules (49 line + 2 paragraph-level + 1 document-level
+  `R04`, which lives outside `_LINE_RULES`/`_PARA_RULES`).
+
 ## 0.5.0 — 2026-05-24
 
 UX overhaul of the terminal and Gradio output to make scanning long
