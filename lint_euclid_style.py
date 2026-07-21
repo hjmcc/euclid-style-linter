@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Lint a LaTeX file against the Euclid Consortium Editorial Board (ECEB)
-Style Guide V4.0.
+Style Guide V5.
 
 Checks 52 rules covering naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and style-guide-
@@ -24,7 +24,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-__version__ = "0.5.1"
+__version__ = "0.6.0"
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -232,6 +232,37 @@ def _clean_text_line(line: str) -> str:
     return text
 
 
+# --- U10 helpers: 4-digit integers must NOT carry a thousands separator -----
+# Command bodies whose digit groups U10 must ignore: siunitx (\num groups by
+# its own group-minimum-digits=5 rule, so a 4-digit \num{} arg is never
+# separated) and cite/ref/label keys (which carry years like 2020).
+_U10_STRIP_CMDS = [
+    "num", "numlist", "numrange", "qty", "qtylist", "qtyrange",
+    "SI", "si", "ang", "label", "ref", "cref", "Cref", "eqref",
+    "pageref", "cite", "citep", "citet", "citealt", "citeauthor",
+    "citeyear", "url", "href", "includegraphics", "input", "include",
+]
+
+# Words after which "<digit> <3 digits>" is a cross-reference, not a
+# bare-space thousands separator (e.g. "Sect. 4 300 objects were found").
+_U10_REF_WORDS = frozenset({
+    "sect", "section", "sec", "fig", "figure", "figs", "table", "tab",
+    "eq", "eqn", "equation", "chap", "chapter", "appendix", "app",
+    "panel", "step", "item", "page", "p", "pp", "row", "col", "column",
+    "level", "order", "phase", "visit", "patch", "tile", "note", "no",
+    "number", "num", "version", "ver", "v", "line", "l", "ll", "type",
+})
+
+# A grouped integer: leading digits then one-or-more (separator + 3 digits).
+# Capturing the whole run means 42\,092 and 1\,234\,567 are seen as single
+# numbers, so only the exactly-4-digit ones (1\,900, 3 000) are flagged.
+_U10_RE = re.compile(
+    r"(?<![0-9.,])"                              # not mid-number on the left
+    r"([0-9]+(?:(\\,|\{,\}|,|~| )[0-9]{3})+)"    # digits (sep 3-digits)+
+    r"(?![0-9.])"                                # not continued on the right
+)
+
+
 # ---------------------------------------------------------------------------
 # Rule implementations
 # ---------------------------------------------------------------------------
@@ -350,7 +381,7 @@ class StyleChecker:
                 lineno, m.start(), "N03", "error",
                 f"Do not use \\textsc for instrument name '{m.group(1)}' "
                 "— use upright capitals",
-                "CLAUDE.md",
+                "2.3",
             ))
         return violations
 
@@ -399,7 +430,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "N05", "error",
                 f'"{m.group(0)}" \u2192 "data set" (two words, no hyphen)',
-                "2.4.34",
+                "2.4",
             ))
         return violations
 
@@ -411,7 +442,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "N06", "error",
                 '"comprised of" \u2192 "composed of" or "comprises"',
-                "2.4.39",
+                "2.4",
             ))
         return violations
 
@@ -423,7 +454,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "N07", "error",
                 '"publically" \u2192 "publicly"',
-                "2.4.40",
+                "2.4",
             ))
         return violations
 
@@ -435,7 +466,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "N08", "warning",
                 '"S/N ratio" is redundant \u2192 use "S/N" alone',
-                "2.4.44",
+                "2.4",
             ))
         return violations
 
@@ -447,7 +478,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "N09", "error",
                 f'"{m.group(0)}" \u2192 "modelling"',
-                "2.4.8",
+                "2.4",
             ))
         return violations
 
@@ -459,7 +490,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "N10", "error",
                 '"associated to" \u2192 "associated with"',
-                "2.4.9",
+                "2.4",
             ))
         return violations
 
@@ -524,7 +555,7 @@ class StyleChecker:
                     lineno, offset + m.start(), "N13", "warning",
                     f'"<{m.group(1)}>" in math → use '
                     f'\\langle {m.group(1)} \\rangle or \\ave{{{m.group(1)}}}',
-                    "2.5.10",
+                    "2.5",
                 ))
 
         for mm in _INLINE_MATH_RE.finditer(stripped):
@@ -552,7 +583,7 @@ class StyleChecker:
                 violations.append(Violation(
                     lineno, offset + m.start(), "N14", "warning",
                     f'"{op}" in math → use {fix}',
-                    "2.5.10",
+                    "2.5",
                 ))
 
         for mm in _INLINE_MATH_RE.finditer(stripped):
@@ -670,7 +701,7 @@ class StyleChecker:
                 violations.append(Violation(
                     lineno, m.start(), "E01", "error",
                     f'US spelling "{found}" \u2192 British "{uk}"',
-                    "2.4.1",
+                    "2.4",
                 ))
         return violations
 
@@ -686,7 +717,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "E02", "error",
                 '"percent" \u2192 "per cent" (two words in British English)',
-                "2.4.1",
+                "2.4",
             ))
         return violations
 
@@ -705,7 +736,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "E03", "error",
                 '"gray" \u2192 "grey" (British spelling)',
-                "2.4.1",
+                "2.4",
             ))
         return violations
 
@@ -717,7 +748,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "E04", "error",
                 '"acknowledgment" \u2192 "acknowledgement"',
-                "2.4.1",
+                "2.4",
             ))
         return violations
 
@@ -729,7 +760,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "E05", "error",
                 '"modeling" \u2192 "modelling"',
-                "2.4.1",
+                "2.4",
             ))
         return violations
 
@@ -741,7 +772,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "E06", "error",
                 '"labeled" \u2192 "labelled"',
-                "2.4.1",
+                "2.4",
             ))
         return violations
 
@@ -757,7 +788,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "E07", "error",
                 '"catalog" \u2192 "catalogue"',
-                "2.4.1",
+                "2.4",
             ))
         return violations
 
@@ -772,7 +803,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "E08", "error",
                 '"favor" \u2192 "favour"',
-                "2.4.1",
+                "2.4",
             ))
         return violations
 
@@ -797,7 +828,7 @@ class StyleChecker:
                 violations.append(Violation(
                     lineno, m.start(), "U01", "error",
                     f'"{m.group(0)}" \u2192 use exponent notation "{fix}"',
-                    "2.2.8",
+                    "2.2",
                 ))
         return violations
 
@@ -811,7 +842,7 @@ class StyleChecker:
                 lineno, m.start(), "U02", "error",
                 f'Unit abbreviation "{m.group(0)}" should not be pluralised '
                 f'\u2192 "{singular}"',
-                "2.2.2",
+                "2.2",
             ))
         return violations
 
@@ -835,7 +866,7 @@ class StyleChecker:
                 lineno, m.start(), "U03", "warning",
                 f'Missing thin space before unit \u2192 insert "\\," '
                 f"before the unit",
-                "2.2.6",
+                "2.2",
             ))
         return violations
 
@@ -860,7 +891,7 @@ class StyleChecker:
                 lineno, m.start(), "U05", "warning",
                 "Powers of 10 should use LaTeX notation "
                 "(e.g. $3 \\times 10^{5}$), not 'e' notation",
-                "2.5.13",
+                "2.5",
             ))
         return violations
 
@@ -869,8 +900,11 @@ class StyleChecker:
         """Thousands separator should not use comma."""
         violations = []
         stripped = _strip_comments(raw)
-        # Find digit,3-digits pattern but NOT inside .bib references or {,}
-        for m in re.finditer(r"[0-9],[0-9]{3}(?![0-9])", stripped):
+        # Find digit,3-digits pattern but NOT inside .bib references or {,}.
+        # Require a leading digit so this only fires on 5+-digit numbers
+        # (e.g. 10,000); a bare-comma 4-digit number is handled by U10, which
+        # asks for the separator to be removed rather than converted.
+        for m in re.finditer(r"(?<=[0-9])[0-9],[0-9]{3}(?![0-9])", stripped):
             # Skip the TeX {,} thin-space idiom: e.g. 10{,}000
             before = stripped[max(0, m.start() - 1):m.start()]
             after = stripped[m.end():m.end() + 1]
@@ -884,7 +918,7 @@ class StyleChecker:
                 lineno, m.start(), "U07", "warning",
                 "Use thin space (\\,) or {,} for thousands separator, "
                 "not a bare comma",
-                "2.5.22",
+                "2.5",
             ))
         return violations
 
@@ -913,7 +947,7 @@ class StyleChecker:
                 lineno, m.start(), "U08", "warning",
                 f'Integer "{digits}" > 4 digits → use thin-space separator '
                 f'"{fix}" or \\num{{{digits}}} (siunitx)',
-                "2.5.22",
+                "2.5",
             ))
         return violations
 
@@ -933,7 +967,7 @@ class StyleChecker:
                     lineno, offset + m.start(), "U09", "warning",
                     f'Scientific notation "{m.group(1)}\\{m.group(2)} 10^..." '
                     f'→ use "{m.group(1)}\\times 10^..."',
-                    "2.5.13",
+                    "2.5",
                 ))
 
         for mm in _INLINE_MATH_RE.finditer(stripped):
@@ -944,6 +978,37 @@ class StyleChecker:
             scan(mm.group(0)[2:-2], mm.start() + 2)
         if ctx.in_math_env:
             scan(stripped, 0)
+        return violations
+
+    @staticmethod
+    def check_U10(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""4-digit integers take no thousands separator (only 5+ digits do).
+
+        The inverse of U08: U08 asks 5+-digit integers to *add* a thin space,
+        this asks 4-digit integers to *drop* one. Scans the raw line (with
+        \num{}/cite bodies removed but inline math kept) so that a number
+        typeset in math such as ``$4\,352$`` is still seen.
+        """
+        violations = []
+        scanned = _remove_commands(_strip_comments(raw), _U10_STRIP_CMDS)
+        for m in _U10_RE.finditer(scanned):
+            run = m.group(1)
+            sep = m.group(2)
+            digits = re.sub(r"[^0-9]", "", run)
+            if len(digits) != 4:
+                continue  # 5+ digit integers correctly keep the separator
+            # A bare space / tie after a reference word ("Sect. 4 300") is a
+            # cross-reference, not a thousands separator.
+            if sep in {" ", "~"}:
+                wm = re.search(r"([A-Za-z]+)\.?\s*$", scanned[:m.start()])
+                if wm and wm.group(1).lower() in _U10_REF_WORDS:
+                    continue
+            violations.append(Violation(
+                lineno, m.start(), "U10", "warning",
+                f'4-digit integer "{run}" takes no thousands separator '
+                f'→ write "{digits}"',
+                "2.5",
+            ))
         return violations
 
     # ===== Category 4: LaTeX Typesetting ===================================
@@ -961,7 +1026,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "T01", "warning",
                 'Straight double quote " \u2192 use `` and \'\' (TeX quotes)',
-                "2.5.3",
+                "2.5",
             ))
         return violations
 
@@ -1002,7 +1067,7 @@ class StyleChecker:
                 lineno, m.start(), "T02", "warning",
                 f'"{m.group(0)}" \u2192 use en-dash "{m.group(1)}--{m.group(2)}" '
                 "for number ranges",
-                "2.5.4",
+                "2.5",
             ))
         return violations
 
@@ -1021,7 +1086,7 @@ class StyleChecker:
                 violations.append(Violation(
                     lineno, offset + m.start(), "T04", "warning",
                     f'Math operator "{op}" should use \\{op} in math mode',
-                    "2.5.10",
+                    "2.5",
                 ))
 
         # Inline math: $...$, \(...\), \[...\]
@@ -1075,7 +1140,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, len(stripped) - 2, "T05", "warning",
                 r"Do not use \\ for paragraph breaks — use blank lines",
-                "2.5.1",
+                "2.5",
             ))
         return violations
 
@@ -1090,7 +1155,7 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "T06", "warning",
                 "URL should be wrapped in \\url{} or \\href{}",
-                "2.9",
+                "2.10",
             ))
         return violations
 
@@ -1120,7 +1185,7 @@ class StyleChecker:
                     lineno, m.start(1), "T08", "warning",
                     f'"{m.group(1)}" at sentence start — write out in full '
                     '(Section, Figure, Equation, etc.)',
-                    "2.3.19",
+                    "2.3",
                 ))
         # After sentence-ending punctuation (same line)
         for m in re.finditer(r"\.\s+(" + abbrevs + r")", stripped):
@@ -1132,7 +1197,7 @@ class StyleChecker:
                 lineno, m.start(1), "T08", "warning",
                 f'"{m.group(1)}" appears to start a sentence — '
                 "write out in full",
-                "2.3.19",
+                "2.3",
             ))
         return violations
 
@@ -1222,7 +1287,7 @@ class StyleChecker:
                 lineno, m.start(), "T13", "warning",
                 "Opening quote '' is two right-quotes — "
                 "use `` (two backticks) for the opener",
-                "2.5.3",
+                "2.5",
             ))
         return violations
 
@@ -1250,7 +1315,7 @@ class StyleChecker:
                     lineno, offset + m.start(), "T14", "warning",
                     f'"{num}{unit}" in math: units must be roman with thin '
                     f'space → "{num}\\,\\mathrm{{{unit}}}"',
-                    "2.2.6",
+                    "2.2",
                 ))
 
         for mm in _INLINE_MATH_RE.finditer(stripped):
@@ -1268,7 +1333,7 @@ class StyleChecker:
                 lineno, m.start(), "T14", "warning",
                 f'"{num}{unit}" in prose: put in math mode with thin space → '
                 f'"${num}\\,\\mathrm{{{unit}}}$"',
-                "2.2.6",
+                "2.2",
             ))
         return violations
 
@@ -1284,7 +1349,7 @@ class StyleChecker:
                 lineno, 0, "R02", "warning",
                 "EC citation format: use 'Euclid Collaboration: Author' "
                 "with a colon, not 'et al.'",
-                "2.6.7",
+                "2.7",
             ))
         return violations
 
@@ -1311,7 +1376,7 @@ class StyleChecker:
                     lineno, 0, "R03", "suggestion",
                     "Commented-out text — arXiv source is public; "
                     "remove dead text before submission",
-                    "2.3.17",
+                    "2.6",
                 ))
         return violations
 
@@ -1325,7 +1390,7 @@ class StyleChecker:
                 lineno, 0, "R05", "warning",
                 '"arXiv e-prints, arXiv:..." is redundant \u2192 '
                 'use just "arXiv:..." (delete the \\journal line in .bib)',
-                "2.6",
+                "2.7",
             ))
         return violations
 
@@ -1352,13 +1417,13 @@ class StyleChecker:
             violations.append(Violation(
                 lineno, m.start(), "S01", "error",
                 '"DEC" \u2192 "Dec" (declination abbreviation)',
-                "2.3.10",
+                "2.3",
             ))
         for m in re.finditer(r"\bR\.A\.(?=\s|$|[^A-Za-z])", text):
             violations.append(Violation(
                 lineno, m.start(), "S01", "error",
                 '"R.A." \u2192 "RA" (right ascension abbreviation)',
-                "2.3.10",
+                "2.3",
             ))
         return violations
 
@@ -1372,7 +1437,7 @@ class StyleChecker:
                 lineno, m.start(), "S02", "error",
                 f'"non{m.group(1)}..." \u2192 "non-{m.group(1)}..." '
                 "(hyphenate non- before capitals)",
-                "2.4.41",
+                "2.4",
             ))
         return violations
 
@@ -1391,7 +1456,7 @@ class StyleChecker:
                 lineno, m.start(), "S03", "warning",
                 f'Waveband letter "{band}" should be italicised '
                 f'\u2192 "$\\textit{{{band}}}$ band" or "${{\\it {band}}}$-band"',
-                "2.4.28",
+                "2.4",
             ))
         return violations
 
@@ -1415,7 +1480,7 @@ class StyleChecker:
                 lineno, m.start(), "S04", "error",
                 f'"data {verb}" \u2192 "data {plural[verb.lower()]}" '
                 '("data" is plural in Euclid style)',
-                "2.4.35",
+                "2.4",
             ))
         return violations
 
@@ -1444,7 +1509,7 @@ class StyleChecker:
                     lineno, m.start(), "S05", "warning",
                     f'"the {lower}" \u2192 "the {upper}" when referring '
                     f"to ours specifically",
-                    "3.3",
+                    "2.3",
                 ))
         return violations
 
@@ -1515,7 +1580,7 @@ _LINE_RULES: list[str] = [
     "check_E01", "check_E02", "check_E03", "check_E04",
     "check_E05", "check_E06", "check_E07", "check_E08",
     "check_U01", "check_U02", "check_U03", "check_U05",
-    "check_U07", "check_U08", "check_U09",
+    "check_U07", "check_U08", "check_U09", "check_U10",
     "check_T01", "check_T02", "check_T04", "check_T05",
     "check_T06", "check_T08", "check_T09", "check_T10",
     "check_T11", "check_T12", "check_T13", "check_T14",
@@ -1815,7 +1880,7 @@ def _format_json(violations: list[Violation], path: Path) -> str:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Lint a LaTeX file against the ECEB Style Guide V4.0.",
+        description="Lint a LaTeX file against the ECEB Style Guide V5.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(

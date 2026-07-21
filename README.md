@@ -11,7 +11,7 @@ license: mit
 
 # euclid-style-linter
 
-Lint LaTeX files against the [Euclid Consortium Editorial Board (ECEB) Style Guide V4.0](https://www.euclid-ec.org/).
+Lint LaTeX files against the [Euclid Consortium Editorial Board (ECEB) Style Guide V5](https://www.euclid-ec.org/).
 
 Checks 52 rules across 6 categories: naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and Euclid-specific
@@ -124,6 +124,7 @@ omit the source snippets.
 | U07 | Units | warning | Thousands separator: use `\,` or `{,}`, not bare comma | 2.5.22 |
 | U08 | Units | warning | Integer > 4 digits in prose needs thin-space (`100\,000`) | 2.5.22 |
 | U09 | Units | warning | Scientific notation: use `\times`, not `\,` or `\cdot` before `10^N` | 2.5.13 |
+| U10 | Units | warning | 4-digit integer takes no thousands separator (drop it: `1900`) | 2.5.22 |
 | T01 | Typesetting | warning | Straight double quotes -- use ` `` ` and `''` | 2.5.3 |
 | T02 | Typesetting | warning | Hyphen in number range -- use en-dash `--` | 2.5.4 |
 | T04 | Typesetting | warning | Math operators without backslash (e.g. `log` not `\log`) | 2.5.10 |
@@ -154,7 +155,7 @@ Filter rules by category with `--category`:
 |------|-------|
 | `naming` | N01--N16 |
 | `english` | E01--E08 |
-| `units` | U01, U02, U03, U05, U07--U09 |
+| `units` | U01, U02, U03, U05, U07--U10 |
 | `typesetting` | T01, T02, T04--T06, T08--T14 |
 | `references` | R02--R05 |
 | `style` | S01--S05 |

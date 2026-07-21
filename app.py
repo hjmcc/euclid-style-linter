@@ -116,7 +116,7 @@ with gr.Blocks(title="ECEB Style Linter") as demo:
     gr.Markdown(
         f"# 🔭 Euclid Style Linter  \n"
         f"*Linter version `v{__version__}`*\n\n"
-        f"Check your LaTeX source against the **ECEB Style Guide V4.0** — "
+        f"Check your LaTeX source against the **ECEB Style Guide V5** — "
         f"52 rules covering naming, British English, units, typesetting, references, and style."
     )
 

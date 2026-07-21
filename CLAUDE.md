@@ -1,7 +1,7 @@
 # euclid-style-linter
 
 Automated LaTeX linter for the Euclid Consortium Editorial Board (ECEB) Style
-Guide V4.0. Extracted from the [EUDF-DR1](https://github.com/hjmcc/EUDF-DR1)
+Guide V5. Extracted from the [EUDF-DR1](https://github.com/hjmcc/EUDF-DR1)
 pipeline as a stand-alone tool.
 
 ## Working Rules
@@ -57,7 +57,7 @@ euclid-style-linter/
 ├── .claude/skills/check-style/       # Claude Code skill for /check-style
 │   └── SKILL.md
 ├── docs/                             # Reference material (not committed)
-│   ├── Euclid_Style_Guide_V4.0.pdf  # ECEB Style Guide V4.0
+│   ├── Euclid_Style_Guide_V5.pdf  # ECEB Style Guide V5
 │   └── euclid_template/             # A&A template for EC papers
 └── tests/
     ├── test_lint_euclid_style.py     # pytest regression suite (114 cases)

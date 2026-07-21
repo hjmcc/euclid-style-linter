@@ -10,6 +10,57 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
+## 0.6.0 — 2026-07-17
+
+Reconciled all style-guide section references from **ECEB V4.0** to **V5**.
+Rule *logic* is unchanged — a previously-clean paper stays clean; only the
+`(Sect. …)` citation in each finding changed. Bundled here per the policy that
+an ECEB version bump is a major change.
+
+### Added
+
+- **U10** (warning, Sect. 2.5): 4-digit integers must not carry a thousands
+  separator — the inverse of U08. Flags `1\,900`, `1{,}900`, a bare-comma
+  `1,900`, and a space-separated `3 000` (a reference-word guard skips
+  cross-references such as "Sect. 4 300"); numbers typeset in math such as
+  `$4\,352$` are still checked, while 5+-digit numbers and `\num{}` arguments
+  are left alone. **U07** now defers 4-digit bare-comma numbers to U10 (it
+  only fires on 5+-digit numbers) so the two rules never give contradictory
+  advice.
+
+### Changed
+
+- V5 numbers sections at two levels (e.g. `2.4`, `2.5`); the V4 third-level
+  rule numbers (`2.4.34`, `2.5.10`, …) no longer exist, so all `sg_section`
+  values are now two-level V5 sections.
+- Four rules moved section in V5, remapped accordingly:
+  - **R02, R05** (citations) `2.6 → 2.7` (References is now 2.7).
+  - **T06** (wrap bare URL in `\url`) `2.9 → 2.10` (Active links).
+  - **R03** (commented-out text) `2.3 → 2.6` (General recommendations).
+  - **S05** (survey-name capitalisation) `3.3 → 2.3`.
+- **N04** (Euclid subscript-E band notation) stays at **3.5** (The Euclid
+  photometric system) — verified, not moved.
+- Version strings, argparse/help text, and the bundled PDF reference updated
+  to "Style Guide V5"; `docs/Euclid_Style_Guide_V5.pdf` added (gitignored, as
+  with V4.0).
+
+### Fixed
+
+- **N03** (instrument name in `\textsc`) had a stray `"CLAUDE.md"` in its
+  `sg_section` field — a long-standing bug that made it print
+  "(Sect. CLAUDE.md)". Set to **2.3** (name/abbreviation capitalisation).
+  Caught during the V5 audit.
+
+### Notes
+
+- Reconciled against `Euclid_Style_Guide-5.pdf` (V5.1, uploaded 2026-07-07).
+- Every one of the 52 rules was audited (via `ast`) to a valid V5 section.
+- Three topic→section mappings are judgement calls where V5 has no dedicated
+  rule (R03 → 2.6, N03 → 2.3, S05 → 2.3); revisit if a later V5 revision adds
+  explicit rules.
+- The `check-style` skill (`claude-skills-dotfiles`) still says "V4.0" in its
+  prose — a separate repo, not updated here.
+
 ## 0.5.1 — 2026-05-29
 
 Documentation-only release. No change to rule logic, CLI, or output.
