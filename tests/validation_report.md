@@ -1,211 +1,157 @@
 # ECEB Style Linter Validation Report
 
-**Date**: 2026-02-20
-**Linter**: `lint_euclid_style.py` (44 rules, 6 categories)
-**Test papers**: 3 ECEB-reviewed papers + 1 user paper + 1 synthetic test file
+**Date**: 2026-07-22
+**Linter**: `lint_euclid_style.py` v0.7.0 (56 rules, 6 categories, ECEB Style Guide V5)
+**Test papers**: VIS DR1 paper (post-A&A-editorial ground truth), its Q1
+predecessor (pre-editorial), and the synthetic test fixture.
 
-## Summary
-
-| Paper | Errors | Warnings | Suggestions | Total |
-|-------|--------|----------|-------------|-------|
-| EP-I: Wide Survey (2108.01201) | 19 | 59 | 31 | 109 |
-| Euclid II: VIS (2405.13492) | 1 | 4 | 0 | 5 |
-| Euclid I: Overview (2405.13491) | 6 | 29 | 4 | 39 |
-| User paper (aa54594-25) | 6 | 3 | 1 | 10 |
-| Synthetic test file | 45 EXPECT, 0 FP on CLEAN | | | 114 tests |
+The previous report (2026-02-20, 44 rules, validated against EP-I Wide Survey,
+Euclid I Overview, Euclid II VIS, and one user paper; 100% precision on
+non-debatable findings) is preserved in git history and remains valid for the
+rules it covered. This pass validates the v0.6.0/v0.7.0 increments: the V5
+section remap, the four editor-derived rules (N17, T15, T16, T17), and the
+N01/N02 product-name changes.
 
 ---
 
-## Triage: EP-I Wide Survey (2108.01201)
+## Why these targets
 
-This is an older paper (2021) that pre-dates strict ECEB style enforcement.
-Most findings are genuine issues that were not corrected at time of publication.
-
-### Errors (19 total)
-
-| Rule | Count | Verdict | Notes |
-|------|-------|---------|-------|
-| E01 | 10 | **TP** | US spellings: "optimized" x3, "realized" x2, others |
-| E02 | 3 | **TP** | "percent" → "per cent" |
-| E07 | 3 | **TP** | "catalog" → "catalogue" |
-| N05 | 3 | **TP** | "dataset" → "data set" |
-
-### Warnings (59 total)
-
-| Rule | Count | Verdict | Notes |
-|------|-------|---------|-------|
-| N01 | 33 | **TP** | Bare "Euclid" not italicised (pre-dates \Euclid macro) |
-| N12 | 2 | **TP** | "point like" → "point-like" |
-| S03 | 1 | **TP** | Waveband letter not italicised |
-| S05 | 2 | **TP** | "the sun" → "the Sun" |
-| T01 | 5 | **Debatable** | Straight quotes in institution names |
-| T02 | 4 | **TP** | Hyphen in number ranges → en-dash |
-| T06 | 1 | **TP** | URL not wrapped in \url{} |
-| T08 | 1 | **TP** | Abbreviation at sentence start |
-| T12 | 1 | **TP** | Colon before displayed equation |
-| U03 | 3 | **TP** | Missing thin space before unit |
-| U07 | 6 | **Debatable** | Thousands separator (some may be intentional) |
-
-### Suggestions (31 total)
-
-| Rule | Count | Verdict | Notes |
-|------|-------|---------|-------|
-| R03 | 31 | **Debatable** | Commented-out text (mostly editorial instructions) |
+The VIS DR1 paper (`DR1-OUVIS.tex`) went through A&A editorial review in
+July 2026 and was then fixed against ~30 explicit editor comments, so it is
+fresh ground truth in both directions: the linter should be **quiet** on
+everything the editor made the authors fix, and anything it still flags should
+be a genuine leftover. The Q1 predecessor (`q1-ouvis.tex`, same Overleaf
+project) predates those fixes, so the editor-derived rules should **fire** on
+it — a recall check on real prose.
 
 ---
 
-## Triage: Euclid II VIS (2405.13492)
+## Triage: VIS DR1 paper (post-editorial)
 
-Very clean paper — only 5 findings.
-
-| Rule | Count | Severity | Verdict | Notes |
-|------|-------|----------|---------|-------|
-| E02 | 1 | error | **TP** | "percent" → "per cent" |
-| N01 | 2 | warning | **TP** | Bare "Euclid" not italicised |
-| S03 | 1 | warning | **TP** | Waveband letter not italicised |
-| T08 | 1 | warning | **TP** | Abbreviation at sentence start |
-
----
-
-## Triage: Euclid I Overview (2405.13491)
-
-### Errors (6 total — all True Positives)
-
-| Line | Rule | Verdict | Notes |
-|------|------|---------|-------|
-| 3155 | E02 | **TP** | "percent" in caption text — should be "per cent" |
-| 3182 | E02 | **TP** | "percent" in body text — should be "per cent" |
-| 3662 | E02 | **TP** | "percent" in body text — should be "per cent" |
-| 4274 | E02 | **TP** | "percent" in body text — should be "per cent" |
-| 3348 | N05 | **TP** | "dataset" — should be "data set" |
-| 4198 | S04 | **TP** | "data is" — should be "data are" |
-
-### Warnings (29 total)
+19 findings, **all true positives, zero false positives**.
 
 | Rule | Count | Verdict | Notes |
 |------|-------|---------|-------|
-| N01 | 2 | **TP** | Bare "Euclid" in caption/body |
-| S05 | 1 | **TP** | "the universe" → "the Universe" |
-| T01 | 17 | **Debatable** | Straight quotes in Italian institution names |
-| T02 | 5 | **TP** (4) / **Debatable** (1) | Number ranges; 1 is programme name "2020-2025" |
-| T05 | 1 | **TP** | Bare `\\` as paragraph break |
-| T12 | 3 | **TP** | Colon before displayed equation |
+| R03 | 12 | **TP** (low value) | Dead/template comments: A&A template boilerplate ("Now you can add appendices"), two internal Redmine issue URLs, one commented-out paragraph, one dead `\textbf` note. All genuinely worth removing before arXiv, but half are template boilerplate every paper carries. Suggestion severity is right. |
+| T16 | 6 | **TP** | `\emph{Top row:}`, `\emph{Middle row:}`, `\emph{Bottom row:}`, `\emph{Left:}`, `\emph{Top panel:}`, `\emph{Bottom panel:}` — colon inside the italics; guide Sect. 2.8 item 6 explicitly puts the colon outside. Line 182 even mixes wrong `\emph{Left:}` with correct `\emph{Right}:` in one caption. Multi-line caption tracking verified on the real 4-line caption at L180–183. |
+| T17 | 1 | **TP** | L284: `\end{equation}` + blank line + "where $\alpha$ and $\delta$ denote…" — spurious paragraph indent mid-sentence. The paper's other equation continuation (L301–304) uses the correct `%` glue line, confirming the authors know the convention; this one survived editorial review. |
 
-### Suggestions (4 total)
+### Silence checks (the important part)
+
+- **N17 (Gaia italic)**: 0 findings on a paper with ~25 `\Gaia`/`\Gaia\`
+  usages, `\textit{Gaia}` in a caption, `\alpha_{\rm Gaia}` in math, and the
+  `\providecommand{\Gaia}` definition. All correctly skipped. True negative —
+  the paper fixed editor comment #17 and the linter agrees.
+- **T15 (`\cref` at sentence start)**: 0 findings against 21 mid-sentence
+  `\cref` and 9 sentence-initial `\Cref`. True negative — editor comment #20
+  fixed, linter agrees.
+- **N01 (Euclid italic)**: 0 findings after this pass's guard fixes (see
+  below); the paper's ~30 `\Euclid` usages and the roman product names are
+  all accepted.
+- **N02, U10**: silent — "Euclid DR1" roman and `42\,092`-style separators
+  are all correct in the fixed paper.
+
+---
+
+## Triage: Q1 predecessor (pre-editorial)
+
+37 findings after the FP fixes below; all triaged as true positives.
 
 | Rule | Count | Verdict | Notes |
 |------|-------|---------|-------|
-| R03 | 4 | **Debatable** | ECEB editorial instructions in comments |
+| N17 | 25 | **TP** | Bare "Gaia DR3 reference catalogue", "Gaia sources", "Gaia filter response functions", "Gaia synthetic magnitudes", "Gaia colours", "(Gaia SourceID …)" — exactly the defect class the A&A editor later flagged on DR1 (#17). Recall confirmed on real prose. |
+| N05 | 3 | **TP** | "dataset" → "data set". |
+| E02 | 3 | **TP** | "percent" → "per cent". |
+| N02 | 2 | **TP** | `\Euclid Deep Field` (guide: roman) and `\Euclid Q1` (product name, caught by this pass's extension). |
+| T16 | 2 | **TP** | `\textit{Left panel:}` etc., colon inside italics. |
+| T01 | 1 | **TP** | `` `` goal" `` — opened with TeX quotes, closed with a straight `"`. |
+| R03 | 1 | **TP** | Commented-out text. |
 
 ---
 
-## Triage: User Paper (aa54594-25)
+## False positives found and fixed in this pass
 
-| Line | Rule | Severity | Verdict | Notes |
-|------|------|----------|---------|-------|
-| * | E02 (x3) | error | **TP** | "percent" — should be "per cent" |
-| * | N02 | warning | **TP** | Italicised Euclid in proper-noun phrase |
-| * | N05 (x3) | error | **TP** | "dataset" — should be "data set" |
-| * | R03 | suggestion | **Debatable** | Commented-out text |
-| * | T01 | warning | **TP** | Straight double quote |
-| * | T02 | warning | **TP** | Hyphen in number range |
+Each fix has a regression marker in `tests/test_lint_euclid_style.tex`.
 
----
-
-## False Positives Fixed During Validation
-
-| Issue | Rule | Root Cause | Fix | Regression test |
+| Issue | Rule | Root cause | Fix | Regression test |
 |-------|------|-----------|-----|-----------------|
-| ORCID IDs (0000-0002-...) | T02 | Regex matching digit-hyphen-digit | `(?<![-\\\d])` lookbehind + skip `\orcid{}`/`\inst{}` lines | EDGE: T02-orcid |
-| Postal codes (277-8583) | T02 | Digit-hyphen-digit in addresses | Skip lines with `\label{aff` | EDGE: T02-address |
-| LaTeX umlauts (`\"o`) | T01 | `\"` is accent, not straight quote | `(?<!\\)` lookbehind | (inherent in regex) |
-| "practice" (noun) | E01 | Noun form valid in BrE | Removed from `_US_UK_SPELLINGS` dict | (inherent) |
-| `\begin{center}` | E01 | "center" in LaTeX command | Added `begin`/`end` to `_remove_commands` | EDGE: (tested via block) |
-| "Center for X" (institution) | E01 | Capitalised proper noun | Skip if followed by institutional preposition | EDGE: E01-institution |
-| "R.A." detection | S01 | Trailing `\b` fails after `.` | Changed to `(?=\s\|$\|[^A-Za-z])` lookahead | EXPECT: S01 |
-| `{\tt Euclid Emulator}` | N01 | Software name in monospace | Skip if `\tt`/`\texttt` in context | EDGE: N01-tt |
-| "HE Space" (company) | N04 | Not a band name | Skip if followed by capitalised word | (inherent) |
-| V9E 2E7 (postal code) | U05 | Catalogue ID with "E" | Skip if preceded by letter / `\label{aff` | EDGE: U05-postal |
-| 1E0657 (cluster name) | U05 | Catalogue ID with "E" | Skip if followed by 3+ digits | (inherent) |
-| Affiliation `\\` (EP-I) | T05 | `\\` in `\institute{}` block | Skip `$^{`, `\inst{`, `\orcid{` lines | EDGE: T05-affiliation |
-| supertabular `\\` (EP-I) | T05 | `supertabular` not in `_TABULAR_ENVS` | Added to `_TABULAR_ENVS` | (inherent) |
-| `\multicolumn` `\\` (EP-I) | T05 | Table header outside env | Skip `\multicolumn`, `\tablehead` etc. | (inherent) |
-| `\footnote{}` `\\` (EP-I) | T05 | Line break inside footnote | Skip if `\footnote` on line/prev line | (inherent) |
-| "the galaxy" (generic) | S05 | Any specific galaxy, not Milky Way | Removed "galaxy" from target list | EDGE: S05-generic-galaxy |
-| "power law with" (noun) | N12 | Standalone noun, not compound adj | Positive noun-follow list for "power law" etc. | EDGE: N12-noun |
+| "the Euclid \ac{DR1}" / "\acl{DR1}" (DR1 paper ×2) | N01 | Acronym macro after "Euclid" invisible to the proper-noun guard | Skip `Euclid \ac…{` | CLEAN: N01 ×2 |
+| "VIS Euclid DR1" (DR1 paper) | N01 | "DR1" not in proper-noun suffixes | Skip `Euclid (DR\|Q)\d` | CLEAN: N01 |
+| "Euclid Ultra-Deep Field" (DR1 paper) | N01 | `\w+` suffix match stops at the hyphen | Allow hyphenated suffix; add "Ultra-Deep" | CLEAN: N01 |
+| Gaia SourceID 1440758225532172032 (Q1 paper) | U08 | 19-digit identifier treated as a quantity | Skip integers ≥ 10 digits and integers after ID-designator words | EDGE: U08-gaia-source-id, U08-long-integer, U08-source-id, U08-ident |
+| "\ac{CCD} 6-2" detector designation (Q1 paper) | T02 | Acronym guard accepted `\ac{CCD}6-2` but not the spaced form | Allow `}` between acronym and space | EDGE: T02-ccd-space |
+
+Also closed in the same pass (a false-**negative**, found while triaging the
+N01 hits): editor comment #2 ("Euclid DR1" must be roman) was credited to N02
+in the 0.7.0 notes, but N02's suffix list had no product names, so
+`\Euclid DR1` went undetected. N02 now flags `\Euclid DR1`, `\Euclid\ Q1`,
+`\textit{Euclid} \ac{DR1}`, and "Ultra-Deep Field(s)" (EXPECT: N02 ×3,
+CLEAN: N02 ×1).
 
 ---
 
-## Precision & Recall Metrics
+## Editor-comments coverage (VIS DR1, ~30 comments)
 
-### EP-I: Wide Survey (after fixes)
+- **Caught by existing rules**: #3 4-digit separator → U10.
+- **Caught by the v0.7.0 rules**: #2 "Euclid DR1" roman → N02 (extension this
+  pass); #17 *Gaia* italic → N17; #20 "Fig. 9" at sentence start → T15;
+  #16 panel words in `\emph` → T16; #10 no indent after equation → T17.
+- **Deliberately not built** (heuristic, high FP risk; revisit only with a
+  flag-for-review severity): #4 Oxford comma, #6/#15 term case/hyphen
+  consistency, #8 "Sect. N of \cite" lowercase, #9/#13 "wide survey" → EWS,
+  #25/#26 word-pair en-dash, #30 `.bib` collaboration colon (needs `.bib`
+  input support).
+- **Not automatable in LaTeX**: #14/#23 semicolons, #22 punctuation,
+  #24 parentheses, #18 redundant "mag" in prose.
+- **Wrong layer**: #18/#27 axis-label units live in matplotlib scripts, not
+  the `.tex` source.
 
-**Excluding debatable (T01 institution names, R03 editorial, U07 separators):**
+## Drafted rules: decisions
 
-- True Positives: 67 (N01 x33, E01 x10, E02 x3, E07 x3, N05 x3, N12 x2, S03 x1, S05 x2, T02 x4, T06 x1, T08 x1, T12 x1, U03 x3)
-- False Positives: 0
-- Debatable: 42 (T01 x5, R03 x31, U07 x6)
-- **Precision: 100%** (67/67 non-debatable are genuine)
-
-### Euclid II: VIS
-
-- True Positives: 5 (E02 x1, N01 x2, S03 x1, T08 x1)
-- False Positives: 0
-- **Precision: 100%** (5/5)
-
-### Euclid I: Overview (after fixes)
-
-**Excluding debatable (T01 Italian names, R03 editorial, T02 programme name):**
-
-- True Positives: 17 (E02 x4, N01 x2, N05 x1, S04 x1, S05 x1, T02 x4, T05 x1, T12 x3)
-- False Positives: 0
-- Debatable: 22 (T01 x17, R03 x4, T02 x1)
-- **Precision: 100%** (17/17 non-debatable)
-
-### User Paper (aa54594-25)
-
-- True Positives: 9 (E02 x3, N02 x1, N05 x3, T01 x1, T02 x1)
-- False Positives: 0
-- Debatable: 1 (R03)
-- **Precision: 100%** (9/9 non-debatable)
-
-### Synthetic Test File
-
-- 45 EXPECT lines: 45/45 detected (100% recall)
-- 44 CLEAN lines: 0/44 false triggers (100% precision)
-- 27 edge cases: 0/27 false positives
-- 1 document-level rule: detected
-- **114 total test cases, all passing**
-
-### Coverage
-
-Rules with at least 1 TP across all test files: E01, E02, E03, E04, E05, E06,
-E07, E08, N01, N02, N03, N04, N05, N06, N07, N08, N09, N10, N11, N12, U01,
-U02, U03, U05, U07, T01, T02, T04, T05, T06, T08, T09, T10, T11, T12, R02,
-R03, R05, S01, S02, S03, S04, S05 = **43/44**
-(R04 fires on synthetic only = 44/44 including synthetic)
-
-**Coverage: 100%** (all rules have at least 1 TP in the test suite)
+- **T16** — **built** (see above). Confirmed to be an actual ECEB V5 rule
+  (Sect. 2.8, Figures, item 6: "typing `\emph{Left}:` … the colon is outside
+  the brackets"), not merely an A&A editorial preference, so it carries a
+  section citation.
+- **T17** — **built** (see above). Grounded in Sect. 2.5 item 1 (a blank
+  line always starts a new paragraph); validated by a surviving defect in the
+  post-editorial DR1 paper (L284) and a correct counter-example (L302 `%`
+  glue).
+- **R02 extensions** (`\authorrunning` format, `.bib` collaboration-colon
+  mode) — **deferred**: needs `.bib` input support, a new input mode for a
+  single-file `.tex` linter. Revisit if a second DR1-era paper shows the
+  same defects.
+- **R04 extension** (`\AckDRone` + `\cite{DR1cite}` presence) — **not
+  built**: too release-specific for a general ECEB linter.
 
 ---
 
-## Remaining Known Limitations
+## Precision & recall summary
 
-1. **T01 Italian institution names**: Straight quotes in official institution
-   names (e.g., Dipartimento di Fisica "G. Galilei") are flagged. These are
-   technically incorrect LaTeX but are present in ECEB-approved papers as-is.
-   Could be addressed by skipping lines with `\label{aff` for T01.
+- **VIS DR1 (post-editorial)**: 19/19 true positives, 0 FP.
+  **Precision: 100%.** All five editor-derived defect classes that the paper
+  fixed are correctly silent; the three finding classes it still contains
+  (dead comments, colon-inside descriptors, one blank-line-after-equation)
+  are genuine leftovers.
+- **Q1 (pre-editorial)**: 37/37 true positives after fixes, 0 FP.
+  N17 recall on real prose: 25/25 bare-Gaia mission references found, with
+  no FP on author lists, `\providecommand` definitions, math subscripts, or
+  file paths.
+- **Synthetic fixture**: 201 tests pass — 75 EXPECT, 75 CLEAN, 49 EDGE,
+  1 document-level.
 
-2. **R03 editorial comments**: Comments like "please do not edit the author
-   list" are flagged as dead text. These are instructions, not dead text.
-   Low severity (suggestion) so acceptable.
+## Remaining known limitations
 
-3. **Multi-line inline math**: The parser is single-line; inline math spanning
-   lines is not handled. This is a known limitation.
-
-4. **`\ac{}` variants**: The linter handles `\ac{}`, `\acl{}`, `\acf{}`,
-   `\acp{}`, `\acs{}` but not all acronym package variants.
-
-5. **S05 "galaxy" omitted**: "the galaxy" is too ambiguous in astronomy papers
-   (usually means a specific galaxy, not the Milky Way). Only "the universe",
-   "the sun", and "the solar system" are checked.
+1. **Included files are not followed**: `\input{authors}` etc. are not
+   linted; run the linter per file. Author-list `.tex` files are mostly
+   preamble-like and report little.
+2. **R03 flags template boilerplate**: about half its hits on a real paper
+   are A&A-template comments every paper carries. Acceptable at suggestion
+   severity.
+3. **T16 covers descriptor-with-colon forms only**: a caption that describes
+   panels in running prose without colons ("the middle panel in the second
+   row corresponds to…") is what the guide asks authors to avoid, but it is
+   not machine-separable from legitimate prose, so it is not flagged.
+4. **`.bib` files are not linted** (blocks the R02 collaboration-colon
+   extension).
+5. **Multi-line inline math** spanning source lines is not parsed (known
+   single-line-parser limitation).

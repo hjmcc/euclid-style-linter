@@ -13,7 +13,7 @@ license: mit
 
 Lint LaTeX files against the [Euclid Consortium Editorial Board (ECEB) Style Guide V5](https://www.euclid-ec.org/).
 
-Checks 52 rules across 6 categories: naming/terminology, British English,
+Checks 56 rules across 6 categories: naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and Euclid-specific
 conventions. Reports violations with line number, rule ID, severity, and the
 relevant Style Guide section.
@@ -95,57 +95,61 @@ omit the source snippets.
 |:--:|:---------|:---------|:------------|:------:|
 | N01 | Naming | warning | *Euclid* (mission/spacecraft) should be italicised | 3.6 |
 | N02 | Naming | warning | *Euclid* should NOT be italicised in proper-noun phrases | 3.6 |
-| N03 | Naming | error | Do not use `\textsc` for instrument names | -- |
+| N03 | Naming | error | Do not use `\textsc` for instrument names | 2.3 |
 | N04 | Naming | warning | Euclid band names should use subscript-E notation | 3.5 |
-| N05 | Naming | error | "dataset"/"data-set" should be "data set" | 2.4.34 |
-| N06 | Naming | error | "comprised of" should be "composed of" or "comprises" | 2.4.39 |
-| N07 | Naming | error | "publically" should be "publicly" | 2.4.40 |
-| N08 | Naming | warning | "S/N ratio" is redundant -- use "S/N" alone | 2.4.44 |
-| N09 | Naming | error | "modelisation" should be "modelling" | 2.4.8 |
-| N10 | Naming | error | "associated to" should be "associated with" | 2.4.9 |
+| N05 | Naming | error | "dataset"/"data-set" should be "data set" | 2.4 |
+| N06 | Naming | error | "comprised of" should be "composed of" or "comprises" | 2.4 |
+| N07 | Naming | error | "publically" should be "publicly" | 2.4 |
+| N08 | Naming | warning | "S/N ratio" is redundant -- use "S/N" alone | 2.4 |
+| N09 | Naming | error | "modelisation" should be "modelling" | 2.4 |
+| N10 | Naming | error | "associated to" should be "associated with" | 2.4 |
 | N11 | Naming | warning | "allow to [verb]" — transitive verb needs an object | 2.4 |
 | N12 | Naming | warning | Compound adjective missing hyphen ("point like" etc.) | 2.4 |
-| N13 | Naming | warning | `<x>` in math should be `\langle x \rangle` or `\ave{x}` | 2.5.10 |
-| N14 | Naming | warning | `>>` / `<<` in math should be `\gg` / `\ll` | 2.5.10 |
+| N13 | Naming | warning | `<x>` in math should be `\langle x \rangle` or `\ave{x}` | 2.5 |
+| N14 | Naming | warning | `>>` / `<<` in math should be `\gg` / `\ll` | 2.5 |
 | N15 | Naming | warning | Compound adjective spanning a line break (paragraph-level) | 2.4 |
 | N16 | Naming | warning | Common noun over-capitalised after proper noun ("Fourier Transform") | 2.4 |
-| E01 | British English | error | US spellings that should be British (50+ words) | 2.4.1 |
-| E02 | British English | error | "percent" should be "per cent" | 2.4.1 |
-| E03 | British English | error | "gray" should be "grey" | 2.4.1 |
-| E04 | British English | error | "acknowledgment" should be "acknowledgement" | 2.4.1 |
-| E05 | British English | error | "modeling" should be "modelling" | 2.4.1 |
-| E06 | British English | error | "labeled" should be "labelled" | 2.4.1 |
-| E07 | British English | error | "catalog" should be "catalogue" | 2.4.1 |
-| E08 | British English | error | "favor" should be "favour" | 2.4.1 |
-| U01 | Units | error | Compound units with "/" should use exponents | 2.2.8 |
-| U02 | Units | error | Plural unit abbreviations (units are never pluralised) | 2.2.2 |
-| U03 | Units | warning | Missing thin space (`\,`) before unit | 2.2.6 |
-| U05 | Units | warning | Powers of 10: use `$3 \times 10^{5}$`, not `3e5` | 2.5.13 |
-| U07 | Units | warning | Thousands separator: use `\,` or `{,}`, not bare comma | 2.5.22 |
-| U08 | Units | warning | Integer > 4 digits in prose needs thin-space (`100\,000`) | 2.5.22 |
-| U09 | Units | warning | Scientific notation: use `\times`, not `\,` or `\cdot` before `10^N` | 2.5.13 |
-| U10 | Units | warning | 4-digit integer takes no thousands separator (drop it: `1900`) | 2.5.22 |
-| T01 | Typesetting | warning | Straight double quotes -- use ` `` ` and `''` | 2.5.3 |
-| T02 | Typesetting | warning | Hyphen in number range -- use en-dash `--` | 2.5.4 |
-| T04 | Typesetting | warning | Math operators without backslash (e.g. `log` not `\log`) | 2.5.10 |
-| T05 | Typesetting | warning | `\\` used as paragraph break -- use blank lines | 2.5.1 |
-| T06 | Typesetting | warning | URL not wrapped in `\url{}` or `\href{}` | 2.9 |
-| T08 | Typesetting | warning | Abbreviation at sentence start (write out in full) | 2.3.19 |
+| N17 | Naming | warning | *Gaia* (mission) should be italicised as `\Gaia` | 3.6 |
+| E01 | British English | error | US spellings that should be British (50+ words) | 2.4 |
+| E02 | British English | error | "percent" should be "per cent" | 2.4 |
+| E03 | British English | error | "gray" should be "grey" | 2.4 |
+| E04 | British English | error | "acknowledgment" should be "acknowledgement" | 2.4 |
+| E05 | British English | error | "modeling" should be "modelling" | 2.4 |
+| E06 | British English | error | "labeled" should be "labelled" | 2.4 |
+| E07 | British English | error | "catalog" should be "catalogue" | 2.4 |
+| E08 | British English | error | "favor" should be "favour" | 2.4 |
+| U01 | Units | error | Compound units with "/" should use exponents | 2.2 |
+| U02 | Units | error | Plural unit abbreviations (units are never pluralised) | 2.2 |
+| U03 | Units | warning | Missing thin space (`\,`) before unit | 2.2 |
+| U05 | Units | warning | Powers of 10: use `$3 \times 10^{5}$`, not `3e5` | 2.5 |
+| U07 | Units | warning | Thousands separator: use `\,` or `{,}`, not bare comma | 2.5 |
+| U08 | Units | warning | Integer > 4 digits in prose needs thin-space (`100\,000`) | 2.5 |
+| U09 | Units | warning | Scientific notation: use `\times`, not `\,` or `\cdot` before `10^N` | 2.5 |
+| U10 | Units | warning | 4-digit integer takes no thousands separator (drop it: `1900`) | 2.5 |
+| T01 | Typesetting | warning | Straight double quotes -- use ` `` ` and `''` | 2.5 |
+| T02 | Typesetting | warning | Hyphen in number range -- use en-dash `--` | 2.5 |
+| T04 | Typesetting | warning | Math operators without backslash (e.g. `log` not `\log`) | 2.5 |
+| T05 | Typesetting | warning | `\\` used as paragraph break -- use blank lines | 2.5 |
+| T06 | Typesetting | warning | URL not wrapped in `\url{}` or `\href{}` | 2.10 |
+| T08 | Typesetting | warning | Abbreviation at sentence start (write out in full) | 2.3 |
 | T09 | Typesetting | error | `\includegraphics` with both width and height (stretching) | 2.8 |
 | T10 | Typesetting | warning | Adjacent parentheses `)(` — merge or use semicolon | 2.5 |
 | T11 | Typesetting | error | `\acknowledgement{}` command — use environment instead | 3.4 |
 | T12 | Typesetting | warning | Colon before displayed equation — equations are sentences | 2.5 |
-| T13 | Typesetting | warning | `''` used as opening quote (correct opener is `` `` ``) | 2.5.3 |
-| T14 | Typesetting | warning | Number directly attached to physical unit (e.g. `1.5keV`) | 2.2.6 |
-| R02 | References | warning | EC citation should use "Euclid Collaboration:" format | 2.6.7 |
-| R03 | References | suggestion | Commented-out text (arXiv source is public) | 2.3.17 |
+| T13 | Typesetting | warning | `''` used as opening quote (correct opener is `` `` ``) | 2.5 |
+| T14 | Typesetting | warning | Number directly attached to physical unit (e.g. `1.5keV`) | 2.2 |
+| T15 | Typesetting | warning | Lowercase `\cref`/`\ref` at sentence start — use `\Cref` | 2.3 |
+| T16 | Typesetting | warning | Panel descriptor in caption: `\emph{Left}:` (colon outside) | 2.8 |
+| T17 | Typesetting | warning | Blank line after equation but sentence continues lowercase | 2.5 |
+| R02 | References | warning | EC citation should use "Euclid Collaboration:" format | 2.7 |
+| R03 | References | suggestion | Commented-out text (arXiv source is public) | 2.6 |
 | R04 | References | suggestion | Missing `\AckEC` acknowledgements macro | 3.4 |
-| R05 | References | warning | "arXiv e-prints" redundancy in bibliography | 2.6 |
-| S01 | Style | error | "DEC" should be "Dec", "R.A." should be "RA" | 2.3.10 |
-| S02 | Style | error | "non" before capitals needs hyphen ("non-Gaussian") | 2.4.41 |
-| S03 | Style | warning | Waveband letters should be italicised | 2.4.28 |
-| S04 | Style | error | "data is/was/has" -- data is plural in Euclid style | 2.4.35 |
-| S05 | Style | warning | "the universe/galaxy/sun" — capitalise when referring to ours | 3.3 |
+| R05 | References | warning | "arXiv e-prints" redundancy in bibliography | 2.7 |
+| S01 | Style | error | "DEC" should be "Dec", "R.A." should be "RA" | 2.3 |
+| S02 | Style | error | "non" before capitals needs hyphen ("non-Gaussian") | 2.4 |
+| S03 | Style | warning | Waveband letters should be italicised | 2.4 |
+| S04 | Style | error | "data is/was/has" -- data is plural in Euclid style | 2.4 |
+| S05 | Style | warning | "the universe/galaxy/sun" — capitalise when referring to ours | 2.3 |
 
 ## Categories
 
@@ -153,10 +157,10 @@ Filter rules by category with `--category`:
 
 | Flag | Rules |
 |------|-------|
-| `naming` | N01--N16 |
+| `naming` | N01--N17 |
 | `english` | E01--E08 |
 | `units` | U01, U02, U03, U05, U07--U10 |
-| `typesetting` | T01, T02, T04--T06, T08--T14 |
+| `typesetting` | T01, T02, T04--T06, T08--T17 |
 | `references` | R02--R05 |
 | `style` | S01--S05 |
 
@@ -166,9 +170,10 @@ Filter rules by category with `--category`:
 python3 -m pytest tests/ -v
 ```
 
-The test suite includes 158 regression tests: 62 expected violations, 54 clean
-counterparts, 42 edge cases, and 2 document-level rules. All tests verify both
-that violations fire where expected and that false positives are suppressed.
+The test suite includes 201 regression tests: 75 expected violations, 75 clean
+counterparts, 49 edge cases, and a document-level rule check. All tests verify
+both that violations fire where expected and that false positives are
+suppressed.
 
 ## Claude Code integration
 

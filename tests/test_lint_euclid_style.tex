@@ -392,4 +392,79 @@ Hickson 92-3 is a compact group. % EDGE: T02-hickson
 We detect \num{15000} galaxies in the deep field. % EDGE: U08-num
 The catalogue contains \num{1234567} sources. % EDGE: U08-num-large
 
+% ---- N17: Gaia (mission) should be italicised (mirrors N01 for Euclid) ----
+We cross-match VIS detections with Gaia DR3 sources. % EXPECT: N17
+The \Gaia\ mission delivered its third data release. % CLEAN: N17
+The Gaia Collaboration published the catalogue. % CLEAN: N17
+\includegraphics{figures/Gaia_map.pdf} % CLEAN: N17
+
+% ---- T15: lowercase \cref/\ref at sentence start -> use \Cref -------------
+The trend is clear. \cref{fig:demo} shows the residuals. % EXPECT: T15
+The measurement converges after several iterations.
+\cref{fig:demo3} summarises the outcome. % EXPECT: T15
+As shown in \cref{fig:demo4}, the residuals are flat. % CLEAN: T15
+\Cref{fig:demo5} shows the map. % CLEAN: T15
+Results agree with Smith et al. \cref{fig:demo6} shows the fit. % CLEAN: T15
+
+% ---- N01/N02: Euclid data-product names stay roman ------------------------
+The Euclid \ac{DR1} products are now public. % CLEAN: N01
+Delivered as part of the Euclid \acl{DR1} in 2026. % CLEAN: N01
+The VIS Euclid DR1 catalogues are matched to references. % CLEAN: N01
+We study galaxies in the Euclid Ultra-Deep Field. % CLEAN: N01
+The \Euclid DR1 images are now public. % EXPECT: N02
+The \Euclid\ Q1 data were released earlier. % EXPECT: N02
+The \textit{Euclid} \ac{DR1} frames are calibrated. % EXPECT: N02
+The \Euclid \ac{VIS} camera observes one field at a time. % CLEAN: N02
+Positions from \textit{Gaia} DR3 are used throughout. % CLEAN: N17
+
+% ---- T16: panel descriptors in captions -> \emph{Left}: -------------------
+\begin{figure}
+\caption{Left: the model prediction. Right: the residuals.} % EXPECT: T16
+\end{figure}
+\begin{figure}
+\caption{\emph{Left:} the model prediction.} % EXPECT: T16
+\end{figure}
+\begin{figure}
+\caption{\emph{Left}: the model. \textit{Right panel}: the residuals.} % CLEAN: T16
+\end{figure}
+\begin{figure}
+\caption{Arrows on the right panel are enlarged four times.} % CLEAN: T16
+\end{figure}
+\begin{figure}
+\caption{Focal-plane residuals over all observations.
+  Lower right: residuals after subtraction.} % EXPECT: T16
+\end{figure}
+Left: this is body prose, not a caption. % EDGE: T16-prose-not-caption
+\begin{figure}
+\caption{The upper limit: derived at 95 per cent confidence.} % EDGE: T16-upper-limit
+\end{figure}
+
+% ---- U08/T02: identifiers are not quantities or ranges --------------------
+The standard has SourceID 1440758225532172032 in the archive. % EDGE: U08-gaia-source-id
+Object 12345678901 lies in the deep field. % EDGE: U08-long-integer
+The star has SourceID 98765 in the list. % EDGE: U08-source-id
+The source has IDENT 271158 in the catalogue. % EDGE: U08-ident
+Ground testing for \ac{CCD} 6-2 shows nonlinearity. % EDGE: T02-ccd-space
+
+% ---- T17: blank line after equation, sentence continues lowercase ---------
+\begin{equation}
+  a = b + c
+\end{equation}
+
+where $b$ is held fixed. % EXPECT: T17
+\begin{equation}
+  d = e
+\end{equation}
+where $e$ is free. % CLEAN: T17
+\begin{equation}
+  f = g
+\end{equation}
+%
+where $g$ is bound. % CLEAN: T17
+\begin{equation}
+  h = k
+\end{equation}
+
+The next paragraph opens correctly. % CLEAN: T17
+
 \end{document}

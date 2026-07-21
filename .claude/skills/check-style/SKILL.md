@@ -1,6 +1,6 @@
 ---
 name: check-style
-description: Check a LaTeX file against the Euclid Consortium Editorial Board (ECEB) Style Guide V4.0. Use when the user asks to check style, lint, or review a .tex file for ECEB compliance.
+description: Check a LaTeX file against the Euclid Consortium Editorial Board (ECEB) Style Guide V5. Use when the user asks to check style, lint, or review a .tex file for ECEB compliance.
 user-invocable: true
 allowed-tools: Bash(python3:*), Read, Glob, Grep
 argument-hint: <path-to-tex-file>
@@ -9,7 +9,7 @@ argument-hint: <path-to-tex-file>
 # ECEB Style Guide Checker
 
 Run the automated style linter and provide a contextual review of a LaTeX
-file against the Euclid Consortium Editorial Board Style Guide V4.0.
+file against the Euclid Consortium Editorial Board Style Guide V5.
 
 ## Workflow
 
@@ -86,14 +86,14 @@ End with a summary count: `N critical, M warnings, K suggestions`.
 
 ## Rule categories
 
-The linter checks 6 categories with 52 rules:
+The linter checks 6 categories with 56 rules:
 
 | Category | ID prefix | Examples |
 |----------|-----------|----------|
-| Naming & Terminology | N01-N16 | Euclid italicisation, instrument names, data set, compound hyphens, ensemble-average notation, over-capitalised nouns |
+| Naming & Terminology | N01-N17 | Euclid italicisation, instrument names, data set, compound hyphens, ensemble-average notation, over-capitalised nouns |
 | British English | E01-E08 | US→UK spellings, per cent, catalogue |
-| Units & Numbers | U01-U09 | Exponent notation, thin spaces, thousands separator, scientific notation (\times) |
-| LaTeX Typesetting | T01-T14 | TeX quotes, en-dashes, paragraph breaks, figure stretching, number+unit spacing |
+| Units & Numbers | U01-U10 | Exponent notation, thin spaces, thousands separator, scientific notation (\times) |
+| LaTeX Typesetting | T01-T17 | TeX quotes, en-dashes, paragraph breaks, figure stretching, number+unit spacing |
 | References & Citations | R02-R05 | EC citation format, \AckEC, commented text, arXiv redundancy |
 | Style Guide Specific | S01-S05 | Dec/RA, data plural, waveband italics, Universe capitalisation |
 
@@ -103,9 +103,9 @@ The linter checks 6 categories with 52 rules:
 ## Style Check: paper.tex
 
 ### Critical (3)
-1. **Line 47 [E01]**: "color" → "colour" (Sect. 2.4.1)
-2. **Line 112 [N05]**: "dataset" → "data set" (Sect. 2.4.34)
-3. **Line 203 [U01]**: "km/s" → "km s^{-1}" (Sect. 2.2.8)
+1. **Line 47 [E01]**: "color" → "colour" (Sect. 2.4)
+2. **Line 112 [N05]**: "dataset" → "data set" (Sect. 2.4)
+3. **Line 203 [U01]**: "km/s" → "km s^{-1}" (Sect. 2.2)
 
 ### Warnings (2)
 1. **Line 15 [N01]**: "Euclid" should be italicised (Sect. 3.6)
@@ -120,7 +120,7 @@ The linter checks 6 categories with 52 rules:
 ## Notes
 
 - The linter script is at `lint_euclid_style.py` (top-level)
-- Reference: ECEB Style Guide V4.0
+- Reference: ECEB Style Guide V5
 - Some rules are warnings because they have legitimate exceptions
 - The `--category` flag focuses on specific rule groups; `--severity` filters by level
 - Terminal output groups findings by severity, shows source-line context, and ends

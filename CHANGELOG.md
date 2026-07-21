@@ -10,6 +10,67 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
+## 0.7.0 — 2026-07-22
+
+Four new rules distilled from the A&A editor's comments on the VIS DR1 paper
+(the ones that are cleanly machine-detectable; several other comments are
+heuristic or need human judgement and were left out deliberately), plus
+false-positive fixes found in a validation pass against the post-editorial
+VIS DR1 paper and its Q1 predecessor.
+
+### Added
+
+- **N17** (warning, Sect. 3.6): *Gaia* (mission name) should be italicised as
+  `\Gaia` or `\textit{Gaia}` — the *Gaia* sibling of N01/N02 for *Euclid*.
+  Skips `\Gaia`, `\textit{Gaia}`, "Gaia Collaboration/Consortium" (roman proper
+  nouns), `\ac{}`, monospace software names, and filenames/URLs in
+  `\includegraphics`/`\url`/`\href`.
+- **T15** (warning, Sect. 2.3): a lowercase `\cref`/`\ref`/`\eqref` at a
+  sentence start should be the capitalised `\Cref` (which renders
+  "Figure/Section", not lowercase/abbreviated). Extends T08's sentence-boundary
+  logic (via `ctx.prev_raw_line`) to reference macros; guarded against "et al."
+  / "e.g." false boundaries. Accepts `\Cref` and mid-sentence `\cref`.
+- **T16** (warning, Sect. 2.8): panel descriptors in captions should be
+  italicised with the colon outside the italics — `\emph{Left}:`, not bare
+  `Left:` and not `\emph{Left:}`. Only descriptor-with-colon forms inside
+  `\caption{}` are flagged (prose such as "the right panel shows" stays
+  roman); multi-line captions are tracked by brace depth.
+- **T17** (warning, Sect. 2.5): a blank line between a displayed equation and
+  continuation text that starts lowercase creates a spurious paragraph
+  indent — remove the blank line (or glue with a `%` line). Silent when the
+  following text starts a genuine (capitalised) paragraph.
+
+### Fixed
+
+- **N01** no longer flags roman "Euclid" in data-product/release names —
+  "Euclid DR1", "Euclid Q1", "Euclid \ac{DR1}"/"\acl{DR1}" — per the A&A
+  editorial ruling on the VIS DR1 paper, nor in "Euclid Ultra-Deep Field"
+  (proper-noun field name, same class as "Euclid Deep Fields").
+- **N02** now conversely flags *italicised* Euclid in those product names
+  (`\Euclid DR1`, `\Euclid\ Q1`, `\textit{Euclid} \ac{DR1}`), and covers
+  "Ultra-Deep Field(s)". This closes a gap: editor comment #2 ("Euclid DR1"
+  must be roman) was previously credited to N02 but not actually detected.
+- **U08** no longer flags long integers that are identifiers, not
+  quantities: integers of 10+ digits (e.g. 19-digit Gaia source IDs) and
+  integers preceded by an ID-designator word ("SourceID", "IDENT", "ID").
+- **T02** no longer flags detector designations in acronym-macro form with a
+  space, e.g. "\ac{CCD} 6-2" (the guard accepted "\ac{CCD}6-2" but missed
+  the spaced form).
+- **README rule table**: the per-rule Section column still showed V4
+  three-level numbers (e.g. `2.4.1`, `2.5.10`); reconciled all 41 stale rows
+  to the two-level V5 sections the code emits (audited via `ast`, not regex).
+
+### Notes
+
+- 201 tests pass (34 new EXPECT/CLEAN/EDGE cases in the fixture).
+- Validation: on the post-editorial VIS DR1 paper the linter reports 19
+  findings, all true positives (12 R03 dead comments, 6 T16 colon-inside
+  descriptors, 1 T17 spurious paragraph) and zero false positives; N17/T15
+  correctly stay silent on heavy `\Gaia`/`\cref` usage. See
+  `tests/validation_report.md`.
+- Editor comment #3 (4-digit thousands separator) was already covered by
+  **U10**.
+
 ## 0.6.0 — 2026-07-17
 
 Reconciled all style-guide section references from **ECEB V4.0** to **V5**.

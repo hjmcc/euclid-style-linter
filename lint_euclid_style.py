@@ -24,7 +24,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -67,6 +67,17 @@ class TexContext:
         self.has_ackec = False
         self.custom_commands: set[str] = set()
         self.prev_raw_line: str = ""
+        # Last non-blank line strictly before the current one, and whether
+        # one or more blank lines separate it from the current line
+        # (i.e. the current line starts a new paragraph).
+        self.last_nonblank_raw: str = ""
+        self.blank_gap = False
+        # Brace depth of an unclosed \caption{...} carried over from
+        # previous lines (0 = not inside a multi-line caption), and
+        # whether the current line *started* inside such a caption
+        # (True even on the line that closes the caption).
+        self.caption_brace_depth = 0
+        self.in_caption_continuation = False
 
     # --- environment queries ------------------------------------------------
     @property
@@ -85,6 +96,35 @@ class TexContext:
     def update(self, line: str, prev_line: str = "") -> None:
         """Update context from a raw source line."""
         self.prev_raw_line = prev_line
+        # Track the last non-blank line and whether a paragraph gap
+        # (blank line) separates it from the current line.
+        if prev_line.strip():
+            self.last_nonblank_raw = prev_line
+            self.blank_gap = False
+        else:
+            self.blank_gap = True
+
+        # Track multi-line \caption{...} bodies by brace depth (comment
+        # part of the line excluded).  The line that *opens* the caption
+        # is handled by the rule itself; this state covers continuation
+        # lines only.
+        line_nc = _strip_comments(line)
+        self.in_caption_continuation = self.caption_brace_depth > 0
+        if self.caption_brace_depth > 0:
+            self.caption_brace_depth += (
+                line_nc.count("{") - line_nc.count("}")
+            )
+            if self.caption_brace_depth < 0:
+                self.caption_brace_depth = 0
+        else:
+            m = re.search(
+                r"\\caption(?:of)?\*?\s*(?:\[[^\]]*\])?\s*\{", line_nc
+            )
+            if m:
+                rest = line_nc[m.end():]
+                self.caption_brace_depth = max(
+                    0, 1 + rest.count("{") - rest.count("}")
+                )
         # Detect \begin{document}
         if r"\begin{document}" in line:
             self.in_preamble = False
@@ -283,7 +323,7 @@ class StyleChecker:
         # Proper-noun phrases where Euclid should NOT be italicised
         proper_suffixes = (
             "Consortium", "Collaboration", "Survey", "Deep", "Catalogue",
-            "Wide", "Legacy", "Flagship",
+            "Wide", "Legacy", "Flagship", "Ultra-Deep",
             # Geographical terms (e.g. "Euclid Avenue")
             "Avenue", "Street", "Road", "Boulevard",
         )
@@ -315,8 +355,15 @@ class StyleChecker:
             context_before = stripped[max(0, pos - 20):pos]
             context_after = stripped[pos:pos + 40]
             # Is it inside a proper-noun compound?
-            after_word = re.match(r"Euclid\s+(\w+)", context_after)
+            after_word = re.match(r"Euclid\s+([\w-]+)", context_after)
             if after_word and after_word.group(1) in proper_suffixes:
+                continue
+            # Data-product / release names ("Euclid DR1", "Euclid Q1"):
+            # roman is correct here (A&A editorial ruling on the VIS DR1
+            # paper), including acronym-macro forms ("Euclid \ac{DR1}").
+            if re.match(r"Euclid\s+(?:DR|Q)\d\b", context_after):
+                continue
+            if re.match(r"Euclid\s+\\ac[a-z]*\{", context_after):
                 continue
             # Is Euclid at the tail of a Title-Cased compound name?
             # E.g. "Cosmology Likelihood for Observables in Euclid"
@@ -358,8 +405,12 @@ class StyleChecker:
         violations = []
         stripped = _strip_comments(raw)
         pattern = re.compile(
-            r"(\\textit\{\\?Euclid\}|\\emph\{\\?Euclid\}|\\Euclid)\s*"
-            r"(Consortium|Collaboration|Survey|Deep\s+Fields?|Catalogue|Wide\s+Survey|Legacy)"
+            r"(\\textit\{\\?Euclid\}|\\emph\{\\?Euclid\}|\\Euclid)(?:\\[ ])?\s*"
+            r"(Consortium|Collaboration|(?:Ultra-)?Deep\s+Fields?|Catalogue"
+            r"|Wide\s+Survey|Survey|Legacy"
+            # Data-product / release names: "Euclid DR1" is roman (A&A
+            # editorial ruling), also in acronym-macro form \ac{DR1}.
+            r"|(?:DR|Q)\d\b|\\ac[a-z]*\{(?:DR|Q)\d\})"
         )
         for m in pattern.finditer(stripped):
             violations.append(Violation(
@@ -594,6 +645,47 @@ class StyleChecker:
             scan(mm.group(0)[2:-2], mm.start() + 2)
         if ctx.in_math_env:
             scan(stripped, 0)
+        return violations
+
+    @staticmethod
+    def check_N17(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Gaia (mission) should be italicised as \Gaia (mirrors N01 for Euclid)."""
+        violations = []
+        # Proper-noun phrases where Gaia is roman (author/collaboration names).
+        proper_suffixes = ("Collaboration", "Consortium")
+        stripped = _strip_comments(raw)
+        # Blank out graphics/url/href bodies (filenames/URLs may contain "Gaia"
+        # as a literal path component, not a mission reference).  Length-
+        # preserving so column positions still align with the source line.
+        graphics_re = re.compile(
+            r"\\(?:includegraphics(?:\[[^\]]*\])?|graphicspath|url|href)"
+            r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}"
+        )
+        stripped = graphics_re.sub(lambda mm: " " * len(mm.group(0)), stripped)
+        for m in re.finditer(r"(?<!\\)(?<!\{)\bGaia\b", stripped):
+            pos = m.start()
+            before = stripped[max(0, pos - 20):pos]
+            after = stripped[pos:pos + 30]
+            # Proper-noun compound (Gaia Collaboration/Consortium): roman is fine.
+            aw = re.match(r"Gaia\s+(\w+)", after)
+            if aw and aw.group(1) in proper_suffixes:
+                continue
+            # Already wrapped in \textit{ / \emph{ immediately before?
+            if re.search(r"\\(?:textit|emph)\{$", before):
+                continue
+            # Inside \ac{}, monospace (software), or a command definition?
+            if re.search(r"\\ac[lsfp]*\{[^}]*$", before):
+                continue
+            if re.search(r"\\(?:tt|texttt)\b", before):
+                continue
+            if re.search(r"\\(?:new|renew|provide)command", stripped):
+                continue
+            violations.append(Violation(
+                lineno, pos, "N17", "warning",
+                '"Gaia" (mission name) should be italicised as \\Gaia '
+                "or \\textit{Gaia}",
+                "3.6",
+            ))
         return violations
 
     # ===== Category 2: British English =====================================
@@ -934,6 +1026,19 @@ class StyleChecker:
             ctx_around = text[max(0, m.start() - 3):m.end() + 3]
             if "\\," in ctx_around or "{,}" in ctx_around:
                 continue
+            # Identifiers, not quantities: an implausibly long integer
+            # (real quantities that size are typeset in scientific
+            # notation; Gaia source IDs are 19 digits) or a preceding
+            # ID-designator word ("SourceID 144...", "IDENT 98765").
+            if len(digits) >= 10:
+                continue
+            before = text[max(0, m.start() - 20):m.start()]
+            if re.search(
+                r"(?:\bIDs?|SourceID|Source\s+ID|IDENT|identifiers?)"
+                r"\s*[:=]?\s*$",
+                before, re.IGNORECASE,
+            ):
+                continue
             # Group digits from the right in threes:
             # "100000" → "100\,000", "1234567" → "1\,234\,567".
             parts = []
@@ -1058,9 +1163,10 @@ class StyleChecker:
             # Skip catalogue/star names: an UPPERCASE acronym (HE, NGC,
             # SDSS, 2MASS) or a Title-case catalogue prefix (Abell,
             # Hickson, Markarian, Zwicky) followed by whitespace
-            # immediately before the digits.
+            # immediately before the digits — also in acronym-macro form
+            # with a space, e.g. "\ac{CCD} 6-2" (detector designation).
             if re.search(
-                r"(?:\b[A-Z0-9]{2,}|\b[A-Z][a-z]+)\s+$", before
+                r"(?:\b[A-Z0-9]{2,}|\b[A-Z][a-z]+)\}?\s+$", before
             ):
                 continue
             violations.append(Violation(
@@ -1337,6 +1443,128 @@ class StyleChecker:
             ))
         return violations
 
+    @staticmethod
+    def check_T15(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Lowercase \cref/\ref at sentence start — use the capitalised \Cref.
+
+        cleveref's lowercase \cref renders "fig./sect." (or lowercase
+        "figure") which is wrong at a sentence start; a sentence must open with
+        "Figure/Section". Mirrors T08's sentence-boundary logic (via
+        ctx.prev_raw_line) but for reference macros, not literal abbreviations.
+        """
+        violations = []
+        stripped = _strip_comments(raw)
+        ref_cmd = r"(\\(?:cref|cpageref|ref|eqref|nameref))\{"
+        # Line-start case: a genuine sentence start only if the previous
+        # non-blank line ends with sentence-terminating punctuation (or is
+        # blank — a paragraph break). A wrapped source line is not a boundary.
+        m = re.match(r"^\s*" + ref_cmd, stripped)
+        if m:
+            prev = _strip_comments(ctx.prev_raw_line).rstrip()
+            prev_is_sentence_end = (not prev) or prev[-1] in ".?!"
+            # "et al.", "e.g." etc. end in "." without ending a sentence.
+            if prev_is_sentence_end and prev:
+                if re.search(r"\b(al|etc|e\.g|i\.e|cf|vs)\.\s*$", prev[-10:]):
+                    prev_is_sentence_end = False
+            if prev_is_sentence_end:
+                violations.append(Violation(
+                    lineno, m.start(1), "T15", "warning",
+                    f'"{m.group(1)}" at sentence start — use \\Cref '
+                    '(renders "Figure/Sect.", not lowercase/abbreviated)',
+                    "2.3",
+                ))
+        # After sentence-ending punctuation on the same line.
+        for m in re.finditer(r"\.\s+" + ref_cmd, stripped):
+            before = stripped[max(0, m.start() - 10):m.start()]
+            if re.search(r"\b(al|etc|e\.g|i\.e|cf|vs)\s*$", before):
+                continue
+            violations.append(Violation(
+                lineno, m.start(1), "T15", "warning",
+                f'"{m.group(1)}" appears to start a sentence — use \\Cref',
+                "2.3",
+            ))
+        return violations
+
+    @staticmethod
+    def check_T16(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Panel descriptors in captions should be italicised: \emph{Left}:.
+
+        ECEB V5 Sect. 2.8 (Figures, item 6): when describing panels in a
+        caption, identify them as "Left: ...", "Lower right: ...", typing
+        \emph{Left}: — with the colon *outside* the italics.  Only
+        descriptor-with-colon forms are flagged (prose mentions such as
+        "the right panel shows" are legitimately roman).
+        """
+        stripped = _strip_comments(raw)
+        # Only look inside \caption{...} bodies.
+        m = re.search(r"\\caption(?:of)?\*?\s*(?:\[[^\]]*\])?\s*\{", stripped)
+        if m:
+            seg, off = stripped[m.end():], m.end()
+        elif ctx.in_caption_continuation:
+            seg, off = stripped, 0
+        else:
+            return []
+        violations = []
+        words = r"(?:Upper|Lower|Top|Bottom|Middle|Left|Right)"
+        second = r"(?:\s+(?:left|right|centre|center|panels?|rows?|columns?))?"
+        # Bare descriptor + colon, not wrapped in \emph/\textit (a wrapped
+        # descriptor has its closing brace before the colon, so the bare
+        # pattern cannot match it).
+        for mm in re.finditer(r"\b" + words + second + r":", seg):
+            before = seg[max(0, mm.start() - 12):mm.start()]
+            if re.search(r"\\(?:emph|textit)\{$", before):
+                # \emph{Left:} — colon inside the italics; flagged below.
+                continue
+            violations.append(Violation(
+                lineno, off + mm.start(), "T16", "warning",
+                f'Panel descriptor "{mm.group(0)}" in caption should be '
+                "italicised: \\emph{" + mm.group(0).rstrip(":") + "}: "
+                "(colon outside the italics)",
+                "2.8",
+            ))
+        # Wrapped descriptor with the colon *inside* the italics.
+        for mm in re.finditer(
+            r"\\(?:emph|textit)\{" + words + second + r":\}", seg
+        ):
+            violations.append(Violation(
+                lineno, off + mm.start(), "T16", "warning",
+                "Colon should be outside the italics in the panel "
+                "descriptor: \\emph{Left}: not \\emph{Left:}",
+                "2.8",
+            ))
+        return violations
+
+    @staticmethod
+    def check_T17(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
+        r"""Blank line after an equation but the sentence continues lowercase.
+
+        A blank line starts a new paragraph (ECEB V5 Sect. 2.5, item 1), so
+        "\end{equation} <blank> where ..." produces a spurious paragraph
+        indent mid-sentence.  Remove the blank line (or glue with a "%"
+        comment line) when the text after a displayed equation continues
+        the sentence.
+        """
+        if not ctx.blank_gap:
+            return []
+        stripped = _strip_comments(raw)
+        m = re.match(r"\s*([a-z])", stripped)
+        if not m:
+            return []
+        prev = _strip_comments(ctx.last_nonblank_raw).rstrip()
+        if not re.search(
+            r"\\end\{(?:equation|align|alignat|eqnarray|multline|gather"
+            r"|displaymath)\*?\}$|\\\]$",
+            prev,
+        ):
+            return []
+        return [Violation(
+            lineno, m.start(1), "T17", "warning",
+            "Blank line after the equation starts a new paragraph, but the "
+            "text continues the sentence (lowercase) — remove the blank "
+            "line to avoid a spurious indent",
+            "2.5",
+        )]
+
     # ===== Category 5: References & Citations ==============================
 
     @staticmethod
@@ -1576,7 +1804,7 @@ _LINE_RULES: list[str] = [
     "check_N01", "check_N02", "check_N03", "check_N04",
     "check_N05", "check_N06", "check_N07", "check_N08",
     "check_N09", "check_N10", "check_N11", "check_N12",
-    "check_N13", "check_N14",
+    "check_N13", "check_N14", "check_N17",
     "check_E01", "check_E02", "check_E03", "check_E04",
     "check_E05", "check_E06", "check_E07", "check_E08",
     "check_U01", "check_U02", "check_U03", "check_U05",
@@ -1584,6 +1812,7 @@ _LINE_RULES: list[str] = [
     "check_T01", "check_T02", "check_T04", "check_T05",
     "check_T06", "check_T08", "check_T09", "check_T10",
     "check_T11", "check_T12", "check_T13", "check_T14",
+    "check_T15", "check_T16", "check_T17",
     "check_R02", "check_R03", "check_R05",
     "check_S01", "check_S02", "check_S03", "check_S04",
     "check_S05",
