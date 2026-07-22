@@ -57,7 +57,8 @@ def _render_context_html(src_lines: list[str], lineno: int, col: int) -> str:
     )
 
 
-def run_linter(latex_source: str, min_severity: str, categories: list[str]) -> str:
+def run_linter(latex_source: str, min_severity: str, categories: list[str],
+               dialect: str = "gb") -> str:
     if not latex_source.strip():
         return "Paste some LaTeX source and click **Check style**."
 
@@ -69,7 +70,8 @@ def run_linter(latex_source: str, min_severity: str, categories: list[str]) -> s
         tmp.write(latex_source)
         tmp_path = Path(tmp.name)
 
-    violations = lint_file(tmp_path, categories=cats, min_severity=min_severity)
+    violations = lint_file(tmp_path, categories=cats, min_severity=min_severity,
+                           dialect=dialect)
     tmp_path.unlink(missing_ok=True)
 
     if not violations:
@@ -140,6 +142,13 @@ with gr.Blocks(title="ECEB Style Linter") as demo:
                 choices=["suggestion", "warning", "error"],
                 value="suggestion",
             )
+            dialect = gr.Radio(
+                label="English dialect",
+                choices=[("British (ECEB)", "gb"), ("American", "us")],
+                value="gb",
+                info="American skips the British-English rules (E01–E08) "
+                     "for non-ECEB papers.",
+            )
             cats = gr.CheckboxGroup(
                 label="Categories",
                 choices=ALL_CATS,
@@ -158,7 +167,8 @@ with gr.Blocks(title="ECEB Style Linter") as demo:
 
     file_input.change(fn=_load_file, inputs=file_input, outputs=latex_input)
 
-    check_btn.click(fn=run_linter, inputs=[latex_input, severity, cats], outputs=output)
+    check_btn.click(fn=run_linter, inputs=[latex_input, severity, cats, dialect],
+                    outputs=output)
 
 if __name__ == "__main__":
     demo.launch()

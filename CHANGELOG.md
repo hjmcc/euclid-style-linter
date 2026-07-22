@@ -10,6 +10,20 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
+## 0.8.0 — 2026-07-22
+
+### Added
+
+- **`--dialect {gb,us}`** CLI option (and an "English dialect" toggle in the
+  Gradio app). `us` skips the British-English rules (E01–E08) so the linter
+  can be used on non-ECEB papers written in American English; all other
+  rules are dialect-neutral and stay active. The ECEB mandates British
+  English, so `gb` remains the default. This mode only *disables* the
+  British checks — it does not (yet) flag British spellings in a US-English
+  paper; that inverse direction would need its own false-positive
+  validation (e.g. "Centre"/"Programme" in European institution and
+  programme names) against a real AAS-journal paper.
+
 ## 0.7.0 — 2026-07-22
 
 Four new rules distilled from the A&A editor's comments on the VIS DR1 paper

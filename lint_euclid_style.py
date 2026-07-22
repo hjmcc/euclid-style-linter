@@ -24,7 +24,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -1845,8 +1845,15 @@ def lint_file(
     path: Path,
     categories: list[str] | None = None,
     min_severity: str = "suggestion",
+    dialect: str = "gb",
 ) -> list[Violation]:
-    """Lint a .tex file and return a list of violations."""
+    """Lint a .tex file and return a list of violations.
+
+    ``dialect="us"`` skips the British-English rules (E01–E08) so the
+    linter can be used on non-ECEB papers written in American English;
+    all other rules are dialect-neutral. The ECEB Style Guide mandates
+    British English, so ``"gb"`` is the default.
+    """
     severity_order = {"suggestion": 0, "warning": 1, "error": 2}
     min_sev = severity_order.get(min_severity, 0)
 
@@ -1857,6 +1864,9 @@ def lint_file(
             active_rules.extend(_CATEGORY_MAP.get(cat, []))
     else:
         active_rules = list(_LINE_RULES) + list(_PARA_RULES)
+
+    if dialect == "us":
+        active_rules = [r for r in active_rules if not r.startswith("check_E")]
 
     active_line = [r for r in active_rules if r in _LINE_RULES]
     active_para = [r for r in active_rules if r in _PARA_RULES]
@@ -2136,6 +2146,14 @@ def main():
         help="Only check rules in this category (can be repeated)",
     )
     parser.add_argument(
+        "--dialect",
+        choices=["gb", "us"],
+        default="gb",
+        help="English dialect: 'gb' (British English, the ECEB mandate; "
+             "default) or 'us' (skip the British-English rules E01-E08, "
+             "for non-ECEB papers)",
+    )
+    parser.add_argument(
         "--flat",
         action="store_true",
         help="Legacy line-ordered output (don't group by severity)",
@@ -2151,7 +2169,8 @@ def main():
         print(f"\u2717 File not found: {args.file}", file=sys.stderr)
         sys.exit(2)
 
-    violations = lint_file(args.file, categories=args.category, min_severity=args.severity)
+    violations = lint_file(args.file, categories=args.category,
+                           min_severity=args.severity, dialect=args.dialect)
 
     if args.json:
         print(_format_json(violations, args.file))

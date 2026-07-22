@@ -217,3 +217,21 @@ def test_summary_report(lint_results, markers):
     print(f"\nTotal violations in test file: {len(violations)}")
     print(f"EXPECT markers: {len(expects)} | CLEAN markers: {len(cleans)}")
     print("=" * 65)
+
+
+# ---------------------------------------------------------------------------
+# --dialect option
+# ---------------------------------------------------------------------------
+
+def test_dialect_us_skips_english_rules():
+    """dialect="us" must silence E01-E08 and leave all other rules active."""
+    gb = lint_file(TEX_FILE, dialect="gb")
+    us = lint_file(TEX_FILE, dialect="us")
+    gb_rules = {v.rule_id for v in gb}
+    us_rules = {v.rule_id for v in us}
+    # The fixture exercises the English rules under the default dialect...
+    assert any(r.startswith("E") for r in gb_rules)
+    # ...but none of them may fire in US mode,
+    assert not any(r.startswith("E") for r in us_rules)
+    # and every non-English finding must be identical in both modes.
+    assert [v for v in gb if not v.rule_id.startswith("E")] == us

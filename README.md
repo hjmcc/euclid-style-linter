@@ -44,6 +44,10 @@ python3 lint_euclid_style.py --json paper.tex
 # Check only specific categories
 python3 lint_euclid_style.py --category naming --category english paper.tex
 
+# American English (skip the British-English rules E01--E08, for
+# non-ECEB papers; the ECEB mandates British English, so gb is default)
+python3 lint_euclid_style.py --dialect us paper.tex
+
 # Legacy line-ordered output (no severity grouping)
 python3 lint_euclid_style.py --flat paper.tex
 
