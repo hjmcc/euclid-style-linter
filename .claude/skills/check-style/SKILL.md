@@ -136,5 +136,7 @@ rely on remembered counts or ID ranges.
 - Some rules are warnings because they have legitimate exceptions
 - `--category` focuses on specific rule groups; `--severity` filters by
   level; `--dialect us` skips the British-English (E) rules for non-ECEB
-  papers (the ECEB mandates British English, so the default is `gb`)
+  papers (the ECEB mandates British English, so the default is `gb`);
+  `--release none` disables the DR1-specific checks (R06: `\AckDRone`
+  and `\cite{DR1cite}` presence) for papers not based on DR1 data
 - Return code: 0 = clean, 1 = warnings/suggestions only, 2 = errors found

@@ -10,18 +10,38 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
-## Unreleased
+## 0.9.0 — 2026-07-22
 
+### Added
+
+- **`--release {dr1,none}`** CLI option (default `dr1`) and new
+  document-level rule **R06** (warning, Sect. 3.4): papers using DR1 data
+  must include the official `\AckDRone` acknowledgement macro (defined in
+  `euclid.sty`) and cite the DR1 reference paper via the official
+  `DR1cite` key from `Euclid.bib` (A&A editor comment #29 on the VIS DR1
+  paper). Commented-out occurrences do not count. `--release none`
+  disables release-specific checks for papers not based on DR1. Both web
+  apps gained a matching "Data-release checks" control. The mechanism is
+  extensible to future releases (`\AckQone`, `\AckQtwo`, `\AckERO` exist
+  in euclid.sty for the same purpose).
 - **Client-side web app** (`web/index.html`), deployed to GitHub Pages at
   <https://hjmcc.github.io/euclid-style-linter/> by
   `.github/workflows/pages.yml`. The linter runs entirely in the browser
   via Pyodide (WebAssembly): pasted text never leaves the page, which
   answers the consortium data-security concern for unpublished drafts.
-  Same controls as the Space (severity, dialect, categories).
+  Same controls as the Space (severity, dialect, categories, release).
 - **Space hardening**: disabled Gradio telemetry (`analytics_enabled=False`)
   and added a privacy note to the web app stating exactly what happens to
   submitted text (processed transiently, nothing stored; transits Hugging
   Face infrastructure; local CLI recommended for unpublished drafts).
+
+### Notes
+
+- 207 tests pass. Validation: with the default `--release dr1`, the
+  post-editorial VIS DR1 paper correctly gets two R06 warnings — it
+  genuinely still lacks both `\AckDRone` and `\cite{DR1cite}` (editor
+  comment #29 not yet implemented); with `--release none` it is clean at
+  warning level.
 
 ## 0.8.0 — 2026-07-22
 

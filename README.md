@@ -13,9 +13,9 @@ license: mit
 
 Lint LaTeX files against the [Euclid Consortium Editorial Board (ECEB) Style Guide V5](https://www.euclid-ec.org/).
 
-Checks 57 rules across 6 categories: naming/terminology, British English,
+Checks 58 rules across 6 categories: naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and Euclid-specific
-conventions (54 line-level, 2 paragraph-level, 1 document-level). Reports
+conventions (54 line-level, 2 paragraph-level, 2 document-level). Reports
 violations with line number, rule ID, severity, and the relevant Style
 Guide section.
 
@@ -65,6 +65,10 @@ python3 lint_euclid_style.py --category naming --category english paper.tex
 # American English (skip the British-English rules E01--E08, for
 # non-ECEB papers; the ECEB mandates British English, so gb is default)
 python3 lint_euclid_style.py --dialect us paper.tex
+
+# Disable the DR1-specific checks (rule R06: \AckDRone and \cite{DR1cite}
+# presence) for papers not based on DR1 data; dr1 is the default
+python3 lint_euclid_style.py --release none paper.tex
 
 # Legacy line-ordered output (no severity grouping)
 python3 lint_euclid_style.py --flat paper.tex
@@ -167,6 +171,7 @@ omit the source snippets.
 | R03 | References | suggestion | Commented-out text (arXiv source is public) | 2.6 |
 | R04 | References | suggestion | Missing `\AckEC` acknowledgements macro | 3.4 |
 | R05 | References | warning | "arXiv e-prints" redundancy in bibliography | 2.7 |
+| R06 | References | warning | DR1 paper missing `\AckDRone` or `\cite{DR1cite}` (with `--release dr1`, the default) | 3.4 |
 | S01 | Style | error | "DEC" should be "Dec", "R.A." should be "RA" | 2.3 |
 | S02 | Style | error | "non" before capitals needs hyphen ("non-Gaussian") | 2.4 |
 | S03 | Style | warning | Waveband letters should be italicised | 2.4 |
@@ -183,7 +188,7 @@ Filter rules by category with `--category`:
 | `english` | E01--E08 |
 | `units` | U01, U02, U03, U05, U07--U10 |
 | `typesetting` | T01, T02, T04--T06, T08--T17 |
-| `references` | R02--R05 |
+| `references` | R02--R06 |
 | `style` | S01--S05 |
 
 ## Testing
@@ -192,10 +197,10 @@ Filter rules by category with `--category`:
 python3 -m pytest tests/ -v
 ```
 
-The test suite includes 202 regression tests: 75 expected violations, 75 clean
-counterparts, 49 edge cases, a document-level rule check, and CLI-behaviour
-tests (e.g. `--dialect`). All tests verify both that violations fire where
-expected and that false positives are suppressed.
+The test suite includes 207 regression tests: 75 expected violations, 75 clean
+counterparts, 49 edge cases, document-level rule checks, and CLI-behaviour
+tests (e.g. `--dialect`, `--release`). All tests verify both that violations
+fire where expected and that false positives are suppressed.
 
 ## Claude Code integration
 

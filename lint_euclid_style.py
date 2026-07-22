@@ -24,7 +24,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -65,6 +65,9 @@ class TexContext:
         self.env_stack: list[str] = []
         self.in_preamble = True
         self.has_ackec = False
+        # DR1-specific requirements (checked by R06 under --release dr1)
+        self.has_ackdrone = False
+        self.has_dr1cite = False
         self.custom_commands: set[str] = set()
         self.prev_raw_line: str = ""
         # Last non-blank line strictly before the current one, and whether
@@ -132,6 +135,13 @@ class TexContext:
         # Track \AckEC
         if r"\AckEC" in line:
             self.has_ackec = True
+
+        # Track DR1-specific macros (comment-stripped, so commented-out
+        # occurrences don't count)
+        if r"\AckDRone" in line_nc:
+            self.has_ackdrone = True
+        if "DR1cite" in line_nc:
+            self.has_dr1cite = True
 
         # Track custom command definitions (to ignore their bodies)
         if re.search(r"\\(new|renew|provide)command", line):
@@ -1634,6 +1644,35 @@ class StyleChecker:
             )]
         return []
 
+    @staticmethod
+    def check_R06_document(ctx: TexContext) -> list[Violation]:
+        r"""DR1 requirements: \AckDRone and \cite{DR1cite} (--release dr1).
+
+        Papers using DR1 data must include the official \AckDRone
+        acknowledgement macro (defined in euclid.sty) and cite the DR1
+        reference paper with the official DR1cite key from Euclid.bib.
+        Only checked under --release dr1 (the default); use
+        --release none for papers not based on DR1 data.
+        """
+        violations = []
+        if not ctx.has_ackdrone:
+            violations.append(Violation(
+                0, 0, "R06", "warning",
+                "No \\AckDRone acknowledgement macro found — required for "
+                "papers using DR1 data (use --release none if this paper "
+                "is not based on DR1)",
+                "3.4",
+            ))
+        if not ctx.has_dr1cite:
+            violations.append(Violation(
+                0, 0, "R06", "warning",
+                "No \\cite{DR1cite} found — DR1 papers must cite the DR1 "
+                "reference paper via the official key (use --release none "
+                "if this paper is not based on DR1)",
+                "3.4",
+            ))
+        return violations
+
     # ===== Category 6: Style Guide Specific ================================
 
     @staticmethod
@@ -1846,6 +1885,7 @@ def lint_file(
     categories: list[str] | None = None,
     min_severity: str = "suggestion",
     dialect: str = "gb",
+    release: str = "dr1",
 ) -> list[Violation]:
     """Lint a .tex file and return a list of violations.
 
@@ -1853,6 +1893,10 @@ def lint_file(
     linter can be used on non-ECEB papers written in American English;
     all other rules are dialect-neutral. The ECEB Style Guide mandates
     British English, so ``"gb"`` is the default.
+
+    ``release="dr1"`` (the default) enables the DR1-specific document
+    check R06 (\\AckDRone and \\cite{DR1cite} presence);
+    ``release="none"`` disables release-specific checks.
     """
     severity_order = {"suggestion": 0, "warning": 1, "error": 2}
     min_sev = severity_order.get(min_severity, 0)
@@ -1940,6 +1984,10 @@ def lint_file(
         for v in checker.check_R04_document(ctx):
             if severity_order.get(v.severity, 0) >= min_sev:
                 violations.append(v)
+        if release == "dr1":
+            for v in checker.check_R06_document(ctx):
+                if severity_order.get(v.severity, 0) >= min_sev:
+                    violations.append(v)
 
     return violations
 
@@ -2154,6 +2202,14 @@ def main():
              "for non-ECEB papers)",
     )
     parser.add_argument(
+        "--release",
+        choices=["dr1", "none"],
+        default="dr1",
+        help="Data-release-specific checks: 'dr1' (default) requires the "
+             "\\AckDRone acknowledgement macro and \\cite{DR1cite} in the "
+             "document (rule R06); 'none' disables release-specific checks",
+    )
+    parser.add_argument(
         "--flat",
         action="store_true",
         help="Legacy line-ordered output (don't group by severity)",
@@ -2170,7 +2226,8 @@ def main():
         sys.exit(2)
 
     violations = lint_file(args.file, categories=args.category,
-                           min_severity=args.severity, dialect=args.dialect)
+                           min_severity=args.severity, dialect=args.dialect,
+                           release=args.release)
 
     if args.json:
         print(_format_json(violations, args.file))

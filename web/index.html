@@ -135,6 +135,13 @@
       <option value="us">American</option>
     </select>
   </div>
+  <div class="field">
+    <span>Data-release checks</span>
+    <select id="release">
+      <option value="dr1" selected>DR1</option>
+      <option value="none">none</option>
+    </select>
+  </div>
   <fieldset id="cats"><legend>Categories</legend></fieldset>
   <div>
     <button id="check" disabled>Check style</button>
@@ -179,11 +186,11 @@ async function init() {
       "from pathlib import Path\n" +
       "from lint_euclid_style import lint_file, __version__, _CATEGORY_MAP\n" +
       "\n" +
-      "def _lint(src, cats, sev, dialect):\n" +
+      "def _lint(src, cats, sev, dialect, release):\n" +
       "    p = Path('/home/pyodide/input.tex')\n" +
       "    p.write_text(src)\n" +
       "    vs = lint_file(p, categories=list(cats) if cats is not None else None,\n" +
-      "                   min_severity=sev, dialect=dialect)\n" +
+      "                   min_severity=sev, dialect=dialect, release=release)\n" +
       "    return json.dumps([v._asdict() for v in vs])\n" +
       "\n" +
       "_META = json.dumps({'version': __version__,\n" +
@@ -274,7 +281,8 @@ $("check").addEventListener("click", () => {
   const all = document.querySelectorAll("#cats input").length;
   const cats = (boxes.length === 0 || boxes.length === all) ? null : boxes;
   try {
-    const json = lintFn(src, cats, $("severity").value, $("dialect").value);
+    const json = lintFn(src, cats, $("severity").value, $("dialect").value,
+                        $("release").value);
     render(JSON.parse(json), src.split("\n"));
   } catch (err) {
     $("results").innerHTML =

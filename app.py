@@ -58,7 +58,7 @@ def _render_context_html(src_lines: list[str], lineno: int, col: int) -> str:
 
 
 def run_linter(latex_source: str, min_severity: str, categories: list[str],
-               dialect: str = "gb") -> str:
+               dialect: str = "gb", release: str = "dr1") -> str:
     if not latex_source.strip():
         return "Paste some LaTeX source and click **Check style**."
 
@@ -71,7 +71,7 @@ def run_linter(latex_source: str, min_severity: str, categories: list[str],
         tmp_path = Path(tmp.name)
 
     violations = lint_file(tmp_path, categories=cats, min_severity=min_severity,
-                           dialect=dialect)
+                           dialect=dialect, release=release)
     tmp_path.unlink(missing_ok=True)
 
     if not violations:
@@ -119,7 +119,7 @@ with gr.Blocks(title="ECEB Style Linter", analytics_enabled=False) as demo:
         f"# 🔭 Euclid Style Linter  \n"
         f"*Linter version `v{__version__}`*\n\n"
         f"Check your LaTeX source against the **ECEB Style Guide V5** — "
-        f"57 rules covering naming, British English, units, typesetting, references, and style."
+        f"58 rules covering naming, British English, units, typesetting, references, and style."
     )
 
     with gr.Row():
@@ -148,6 +148,13 @@ with gr.Blocks(title="ECEB Style Linter", analytics_enabled=False) as demo:
                 value="gb",
                 info="American skips the British-English rules (E01–E08) "
                      "for non-ECEB papers.",
+            )
+            release = gr.Radio(
+                label="Data-release checks",
+                choices=[("DR1", "dr1"), ("none", "none")],
+                value="dr1",
+                info="DR1 requires the \\AckDRone acknowledgement and "
+                     "\\cite{DR1cite} in the document (rule R06).",
             )
             cats = gr.CheckboxGroup(
                 label="Categories",
@@ -178,7 +185,8 @@ with gr.Blocks(title="ECEB Style Linter", analytics_enabled=False) as demo:
 
     file_input.change(fn=_load_file, inputs=file_input, outputs=latex_input)
 
-    check_btn.click(fn=run_linter, inputs=[latex_input, severity, cats, dialect],
+    check_btn.click(fn=run_linter,
+                    inputs=[latex_input, severity, cats, dialect, release],
                     outputs=output)
 
 if __name__ == "__main__":

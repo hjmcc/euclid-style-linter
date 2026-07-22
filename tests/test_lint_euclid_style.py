@@ -235,3 +235,46 @@ def test_dialect_us_skips_english_rules():
     assert not any(r.startswith("E") for r in us_rules)
     # and every non-English finding must be identical in both modes.
     assert [v for v in gb if not v.rule_id.startswith("E")] == us
+
+
+# ---------------------------------------------------------------------------
+# --release option
+# ---------------------------------------------------------------------------
+
+def test_release_none_disables_r06():
+    """release="none" must silence R06 and leave everything else unchanged."""
+    dr1 = lint_file(TEX_FILE, release="dr1")
+    none = lint_file(TEX_FILE, release="none")
+    assert any(v.rule_id == "R06" for v in dr1)
+    assert not any(v.rule_id == "R06" for v in none)
+    assert [v for v in dr1 if v.rule_id != "R06"] == none
+
+
+def test_release_dr1_fires_both_requirements(tmp_path):
+    """A DR1 paper missing both macros gets two R06 findings at line 0."""
+    p = tmp_path / "bare.tex"
+    p.write_text("\\begin{document}\nSome text.\n\\AckEC\n\\end{document}\n")
+    r06 = [v for v in lint_file(p) if v.rule_id == "R06"]
+    assert len(r06) == 2 and all(v.line == 0 for v in r06)
+    assert any("AckDRone" in v.message for v in r06)
+    assert any("DR1cite" in v.message for v in r06)
+
+
+def test_release_dr1_satisfied_is_silent(tmp_path):
+    """A paper with \\AckDRone and \\cite{DR1cite} produces no R06."""
+    p = tmp_path / "ok.tex"
+    p.write_text(
+        "\\begin{document}\nAs shown in \\cite{DR1cite}, the data are deep.\n"
+        "\\AckDRone\n\\AckEC\n\\end{document}\n"
+    )
+    assert not any(v.rule_id == "R06" for v in lint_file(p))
+
+
+def test_release_dr1_ignores_commented_macros(tmp_path):
+    """Commented-out \\AckDRone / DR1cite must not satisfy R06."""
+    p = tmp_path / "commented.tex"
+    p.write_text(
+        "\\begin{document}\nSome text.\n"
+        "% \\AckDRone\n% \\cite{DR1cite}\n\\AckEC\n\\end{document}\n"
+    )
+    assert len([v for v in lint_file(p) if v.rule_id == "R06"]) == 2
