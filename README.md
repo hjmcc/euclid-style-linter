@@ -169,7 +169,7 @@ omit the source snippets.
 | T17 | Typesetting | warning | Blank line after equation but sentence continues lowercase | 2.5 |
 | R02 | References | warning | EC citation should use "Euclid Collaboration:" format | 2.7 |
 | R03 | References | suggestion | Commented-out text (arXiv source is public) | 2.6 |
-| R04 | References | suggestion | Missing `\AckEC` acknowledgements macro | 3.4 |
+| R04 | References | warning | Missing `\AckEC` acknowledgements macro (required for all EC papers) | 3.4 |
 | R05 | References | warning | "arXiv e-prints" redundancy in bibliography | 2.7 |
 | R06 | References | warning | DR1 paper missing `\AckDRone` (required in addition to `\AckEC`) or `\cite{DR1cite}` (with `--release dr1`, the default) | 3.4 |
 | S01 | Style | error | "DEC" should be "Dec", "R.A." should be "RA" | 2.3 |

@@ -24,7 +24,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -1637,7 +1637,7 @@ class StyleChecker:
         r"""Check for \AckEC acknowledgements macro in the document."""
         if not ctx.has_ackec:
             return [Violation(
-                0, 0, "R04", "suggestion",
+                0, 0, "R04", "warning",
                 "No \\AckEC acknowledgements macro found — "
                 "required for EC papers",
                 "3.4",

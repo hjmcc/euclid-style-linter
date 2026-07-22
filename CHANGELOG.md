@@ -10,6 +10,16 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
+## 0.10.0 — 2026-07-22
+
+### Changed
+
+- **R04** (missing `\AckEC`) raised from suggestion to **warning**. All EC
+  papers must include `\AckEC`; DR1 papers must additionally include
+  `\AckDRone` and `\cite{DR1cite}` (R06). Both requirements now carry the
+  same warning severity. Minor bump because papers previously clean at
+  `--severity warning` may now report R04.
+
 ## 0.9.0 — 2026-07-22
 
 ### Added
