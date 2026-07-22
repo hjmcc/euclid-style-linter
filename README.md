@@ -13,21 +13,31 @@ license: mit
 
 Lint LaTeX files against the [Euclid Consortium Editorial Board (ECEB) Style Guide V5](https://www.euclid-ec.org/).
 
-Checks 56 rules across 6 categories: naming/terminology, British English,
+Checks 57 rules across 6 categories: naming/terminology, British English,
 units/numbers, LaTeX typesetting, references/citations, and Euclid-specific
-conventions. Reports violations with line number, rule ID, severity, and the
-relevant Style Guide section.
+conventions (54 line-level, 2 paragraph-level, 1 document-level). Reports
+violations with line number, rule ID, severity, and the relevant Style
+Guide section.
 
-This tool is not an official product of the ECEB. 
+This tool is not an official product of the ECEB.
+
+## Try it in the browser
+
+A hosted version runs as a Hugging Face Space (no installation needed;
+paste LaTeX source or upload a `.tex` file):
+<https://huggingface.co/spaces/insoluble/euclid-style-linter>
 
 ## Installation
 
-No dependencies beyond Python 3.9+. Just clone and run:
+The linter has no dependencies beyond Python 3.9+. Just clone and run:
 
 ```bash
-git clone https://github.com/<you>/euclid-style-linter.git
+git clone https://github.com/hjmcc/euclid-style-linter.git
 cd euclid-style-linter
 ```
+
+(The optional Gradio web app, `app.py`, powers the Hugging Face Space;
+running it locally additionally needs `pip install gradio`.)
 
 ## Usage
 
@@ -73,13 +83,13 @@ column. A "By rule" footer surfaces your top offenders:
 paper.tex
 
   ERRORS  (2)
-  Line 47   [E01] ERROR      US spelling "color" → British "colour" (Sect. 2.4.1)
+  Line 47   [E01] ERROR      US spelling "color" → British "colour" (Sect. 2.4)
            46 │ The previous line.
         →  47 │ The color is wrong.
               │     ^
            48 │ Next line.
 
-  Line 112  [N05] ERROR      "dataset" → "data set" (two words, no hyphen) (Sect. 2.4.34)
+  Line 112  [N05] ERROR      "dataset" → "data set" (two words, no hyphen) (Sect. 2.4)
            ...
 
   WARNINGS  (1)
@@ -107,7 +117,7 @@ omit the source snippets.
 | N08 | Naming | warning | "S/N ratio" is redundant -- use "S/N" alone | 2.4 |
 | N09 | Naming | error | "modelisation" should be "modelling" | 2.4 |
 | N10 | Naming | error | "associated to" should be "associated with" | 2.4 |
-| N11 | Naming | warning | "allow to [verb]" — transitive verb needs an object | 2.4 |
+| N11 | Naming | warning | "allow to [verb]": transitive verb needs an object | 2.4 |
 | N12 | Naming | warning | Compound adjective missing hyphen ("point like" etc.) | 2.4 |
 | N13 | Naming | warning | `<x>` in math should be `\langle x \rangle` or `\ave{x}` | 2.5 |
 | N14 | Naming | warning | `>>` / `<<` in math should be `\gg` / `\ll` | 2.5 |
@@ -137,12 +147,12 @@ omit the source snippets.
 | T06 | Typesetting | warning | URL not wrapped in `\url{}` or `\href{}` | 2.10 |
 | T08 | Typesetting | warning | Abbreviation at sentence start (write out in full) | 2.3 |
 | T09 | Typesetting | error | `\includegraphics` with both width and height (stretching) | 2.8 |
-| T10 | Typesetting | warning | Adjacent parentheses `)(` — merge or use semicolon | 2.5 |
-| T11 | Typesetting | error | `\acknowledgement{}` command — use environment instead | 3.4 |
-| T12 | Typesetting | warning | Colon before displayed equation — equations are sentences | 2.5 |
+| T10 | Typesetting | warning | Adjacent parentheses `)(`: merge or use a semicolon | 2.5 |
+| T11 | Typesetting | error | `\acknowledgement{}` command: use the environment instead | 3.4 |
+| T12 | Typesetting | warning | Colon before displayed equation (equations are sentences) | 2.5 |
 | T13 | Typesetting | warning | `''` used as opening quote (correct opener is `` `` ``) | 2.5 |
 | T14 | Typesetting | warning | Number directly attached to physical unit (e.g. `1.5keV`) | 2.2 |
-| T15 | Typesetting | warning | Lowercase `\cref`/`\ref` at sentence start — use `\Cref` | 2.3 |
+| T15 | Typesetting | warning | Lowercase `\cref`/`\ref` at sentence start: use `\Cref` | 2.3 |
 | T16 | Typesetting | warning | Panel descriptor in caption: `\emph{Left}:` (colon outside) | 2.8 |
 | T17 | Typesetting | warning | Blank line after equation but sentence continues lowercase | 2.5 |
 | R02 | References | warning | EC citation should use "Euclid Collaboration:" format | 2.7 |
@@ -153,7 +163,7 @@ omit the source snippets.
 | S02 | Style | error | "non" before capitals needs hyphen ("non-Gaussian") | 2.4 |
 | S03 | Style | warning | Waveband letters should be italicised | 2.4 |
 | S04 | Style | error | "data is/was/has" -- data is plural in Euclid style | 2.4 |
-| S05 | Style | warning | "the universe/galaxy/sun" — capitalise when referring to ours | 2.3 |
+| S05 | Style | warning | "the universe/galaxy/sun": capitalise when referring to ours | 2.3 |
 
 ## Categories
 
@@ -174,10 +184,10 @@ Filter rules by category with `--category`:
 python3 -m pytest tests/ -v
 ```
 
-The test suite includes 201 regression tests: 75 expected violations, 75 clean
-counterparts, 49 edge cases, and a document-level rule check. All tests verify
-both that violations fire where expected and that false positives are
-suppressed.
+The test suite includes 202 regression tests: 75 expected violations, 75 clean
+counterparts, 49 edge cases, a document-level rule check, and CLI-behaviour
+tests (e.g. `--dialect`). All tests verify both that violations fire where
+expected and that false positives are suppressed.
 
 ## Claude Code integration
 
@@ -193,25 +203,31 @@ be automated (figure quality, cross-references, citation format).
 
 ## Validation
 
-The linter has been validated against published ECEB-reviewed papers:
-- EP-I: Wide Survey (arXiv:2108.01201)
-- Euclid II: VIS (arXiv:2405.13492)
-- Euclid I: Overview (arXiv:2405.13491)
-- One additional published EC paper
+The linter has been validated in two rounds against real EC papers:
 
-Results: **100% precision** on non-debatable findings across all papers, with
-17 false-positive fixes applied during validation. See
-`tests/validation_report.md` for the full triage.
+- **Published ECEB-reviewed papers** (EP-I: Wide Survey, arXiv:2108.01201;
+  Euclid I: Overview, arXiv:2405.13491; Euclid II: VIS, arXiv:2405.13492;
+  plus one additional published EC paper): **100% precision** on
+  non-debatable findings, with 17 false-positive fixes applied during
+  validation.
+- **A paper fresh from A&A editorial review** (VIS DR1, 2026), used as
+  ground truth in both directions: the linter is silent on everything the
+  editor made the authors fix, and every finding it still reports is a
+  genuine leftover (zero false positives). Its pre-editorial predecessor
+  served as the recall check for the editor-derived rules.
+
+See `tests/validation_report.md` for the current triage (the earlier round
+is preserved in git history).
 
 ## Versioning
 
 The linter follows [Semantic Versioning](https://semver.org):
 
-- **MAJOR** — ECEB style-guide version bump, rule removal/renaming, or
+- **MAJOR**: ECEB style-guide version bump, rule removal/renaming, or
   any CLI-incompatible change.
-- **MINOR** — new rules, new CLI flags, or behavioural changes that
+- **MINOR**: new rules, new CLI flags, or behavioural changes that
   may make a previously-clean paper newly report violations.
-- **PATCH** — false-positive fixes, bug fixes, refactoring with no
+- **PATCH**: false-positive fixes, bug fixes, refactoring with no
   intended change to rule output.
 
 The current version is in `__version__` in `lint_euclid_style.py`

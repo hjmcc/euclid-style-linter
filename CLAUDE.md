@@ -50,7 +50,7 @@ python3 lint_euclid_style.py --category naming --severity warning paper.tex
 
 ```
 euclid-style-linter/
-├── lint_euclid_style.py              # Main linter (single file, ~1350 lines)
+├── lint_euclid_style.py              # Main linter (single file, ~2200 lines)
 ├── README.md                         # User-facing documentation
 ├── LICENSE                           # MIT
 ├── CLAUDE.md                         # This file
@@ -60,7 +60,7 @@ euclid-style-linter/
 │   ├── Euclid_Style_Guide_V5.pdf  # ECEB Style Guide V5
 │   └── euclid_template/             # A&A template for EC papers
 └── tests/
-    ├── test_lint_euclid_style.py     # pytest regression suite (114 cases)
+    ├── test_lint_euclid_style.py     # pytest regression suite (202 cases)
     ├── test_lint_euclid_style.tex    # Synthetic test file with markers
     ├── validation_report.md          # Triage of findings on real papers
     └── run_eceb_validation.sh        # Cross-validation script
@@ -76,11 +76,11 @@ The linter is a single-file, line-by-line processor with five layers:
    LaTeX-aware extraction of prose from raw source lines.
 2. **Context tracking** — `TexContext` class: maintains an environment stack
    (math, verbatim, tabular), preamble state, and document-level flags.
-3. **Rule methods** — `StyleChecker.check_N01` through `check_N16` (52 rules,
-   2 of them paragraph-level):
+3. **Rule methods** — `StyleChecker.check_N01` through `check_T17` (57 rules:
+   54 line-level, 2 paragraph-level, 1 document-level):
    each receives `(lineno, raw_line, cleaned_text, ctx)` and returns a list of
    `Violation` namedtuples.
-4. **Rule registry** — `_LINE_RULES`, `_RAW_LINE_RULES`, `_CATEGORY_MAP`:
+4. **Rule registry** — `_LINE_RULES`, `_PARA_RULES`, `_CATEGORY_MAP`:
    dispatch tables that map rule IDs to methods and categories.
 5. **Output** — terminal (ANSI coloured) or JSON; CLI via `argparse`.
 
@@ -124,9 +124,11 @@ bash tests/run_eceb_validation.sh
 ## Adding a New Rule
 
 1. Add a `check_XX` method to `StyleChecker` following the existing pattern.
-2. Add the rule ID to `_LINE_RULES` (or `_DOC_RULES` for document-level checks).
-3. Add the rule ID to `_RAW_LINE_RULES` if it needs the unstripped raw line.
-4. Add the rule ID to the appropriate category in `_CATEGORY_MAP`.
-5. Add at least one `EXPECT` and one `CLEAN` line to the test file.
-6. Update the rules table in `README.md`.
-7. Run the full test suite and, if possible, validate on a real paper.
+2. Add the rule ID to `_LINE_RULES` (or `_PARA_RULES` for paragraph-level
+   checks; document-level checks are called explicitly at end of document,
+   see `check_R04_document`).
+3. Category membership in `_CATEGORY_MAP` is derived automatically from the
+   rule-ID prefix (N/E/U/T/R/S); there is nothing to add there.
+4. Add at least one `EXPECT` and one `CLEAN` line to the test file.
+5. Update the rules table in `README.md`.
+6. Run the full test suite and, if possible, validate on a real paper.

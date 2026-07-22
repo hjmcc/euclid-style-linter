@@ -119,7 +119,7 @@ with gr.Blocks(title="ECEB Style Linter") as demo:
         f"# 🔭 Euclid Style Linter  \n"
         f"*Linter version `v{__version__}`*\n\n"
         f"Check your LaTeX source against the **ECEB Style Guide V5** — "
-        f"56 rules covering naming, British English, units, typesetting, references, and style."
+        f"57 rules covering naming, British English, units, typesetting, references, and style."
     )
 
     with gr.Row():
