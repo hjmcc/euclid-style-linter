@@ -23,9 +23,17 @@ This tool is not an official product of the ECEB.
 
 ## Try it in the browser
 
-A hosted version runs as a Hugging Face Space (no installation needed;
-paste LaTeX source or upload a `.tex` file):
-<https://huggingface.co/spaces/insoluble/euclid-style-linter>
+Two hosted versions, no installation needed (paste LaTeX source or upload
+a `.tex` file):
+
+- **Client-side app (recommended for drafts)**:
+  <https://hjmcc.github.io/euclid-style-linter/>. The linter runs entirely
+  in your browser via Pyodide (WebAssembly); your text is never uploaded
+  and never leaves the page.
+- **Hugging Face Space**:
+  <https://huggingface.co/spaces/insoluble/euclid-style-linter>. Text is
+  processed transiently server-side and immediately discarded (nothing is
+  stored), but it does transit Hugging Face infrastructure.
 
 ## Installation
 

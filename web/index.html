@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Euclid Style Linter</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a2e; --muted: #667;
+    --panel: #f5f6fa; --border: #d8dbe4; --accent: #2b4a9b;
+    --err: #c0392b; --warn: #b07d00; --sugg: #2471a3;
+    --mark: #ffec99;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161f; --fg: #e6e6ef; --muted: #9aa;
+      --panel: #1d2029; --border: #333748; --accent: #7c9be8;
+      --err: #e07060; --warn: #d4a017; --sugg: #6aa5d8;
+      --mark: #5a4d1a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; max-width: 62rem; padding: 1.5rem 1rem 3rem;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  .sub { color: var(--muted); margin: 0 0 1rem; font-size: .95rem; }
+  .privacy {
+    background: var(--panel); border: 1px solid var(--border);
+    border-left: 4px solid var(--accent); border-radius: 6px;
+    padding: .6rem .9rem; font-size: .9rem; margin-bottom: 1.2rem;
+  }
+  textarea {
+    width: 100%; min-height: 16rem; padding: .7rem;
+    background: var(--panel); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 6px;
+    font: 13px/1.45 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    resize: vertical;
+  }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 1rem 1.5rem;
+    align-items: flex-end; margin: .8rem 0 1rem;
+  }
+  .field { display: flex; flex-direction: column; gap: .25rem; }
+  .field > span { font-size: .8rem; color: var(--muted); }
+  select, input[type="file"] {
+    background: var(--panel); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 5px; padding: .35rem .5rem;
+    font-size: .9rem;
+  }
+  fieldset {
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: .3rem .7rem .5rem; margin: 0;
+  }
+  legend { font-size: .8rem; color: var(--muted); padding: 0 .3rem; }
+  fieldset label { margin-right: .9rem; font-size: .9rem; white-space: nowrap; }
+  button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+    padding: .55rem 1.4rem; font-size: 1rem; cursor: pointer;
+  }
+  button:disabled { opacity: .45; cursor: wait; }
+  #status { color: var(--muted); font-size: .9rem; margin-left: .8rem; }
+  #results { margin-top: 1.5rem; }
+  .sev-h { font-size: 1.05rem; margin: 1.2rem 0 .5rem; font-weight: 600; }
+  .sev-error { color: var(--err); }
+  .sev-warning { color: var(--warn); }
+  .sev-suggestion { color: var(--sugg); }
+  .finding {
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: .5rem .8rem; margin-bottom: .5rem; background: var(--panel);
+  }
+  .finding .head { font-size: .92rem; }
+  .finding .rule { font-weight: 600; }
+  .finding .sect { color: var(--muted); }
+  .src {
+    display: block; overflow-x: auto; margin-top: .35rem; padding: .3rem .5rem;
+    background: var(--bg); border-radius: 4px;
+    font: 12.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    white-space: pre;
+  }
+  .src .ln { color: var(--muted); user-select: none; }
+  .src mark { background: var(--mark); color: inherit; padding: 0 1px; }
+  .summary {
+    font-weight: 600; margin-top: 1rem; padding: .6rem .9rem;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+  }
+  .byrule { color: var(--muted); font-weight: 400; font-size: .9rem; }
+  footer {
+    margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: .85rem;
+  }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>🔭 Euclid Style Linter</h1>
+<p class="sub">
+  Check LaTeX source against the ECEB Style Guide V5
+  <span id="version"></span>
+</p>
+
+<div class="privacy">
+  <strong>Runs entirely in your browser.</strong> The linter executes locally
+  via Pyodide (Python compiled to WebAssembly): your text is never uploaded
+  and never leaves this page. The only network requests are the one-off
+  downloads of the Python runtime (from the jsDelivr CDN) and the linter
+  script when the page loads. You can verify this in the browser's network
+  inspector. This tool is not an official product of the ECEB.
+</div>
+
+<div class="field" style="margin-bottom:.6rem">
+  <span>Upload a .tex file (or paste below)</span>
+  <input type="file" id="file" accept=".tex,.txt">
+</div>
+
+<textarea id="src" spellcheck="false"
+  placeholder="\documentclass{aa}&#10;\begin{document}&#10;...&#10;\end{document}"></textarea>
+
+<div class="controls">
+  <div class="field">
+    <span>Minimum severity</span>
+    <select id="severity">
+      <option value="suggestion" selected>suggestion</option>
+      <option value="warning">warning</option>
+      <option value="error">error</option>
+    </select>
+  </div>
+  <div class="field">
+    <span>English dialect</span>
+    <select id="dialect">
+      <option value="gb" selected>British (ECEB)</option>
+      <option value="us">American</option>
+    </select>
+  </div>
+  <fieldset id="cats"><legend>Categories</legend></fieldset>
+  <div>
+    <button id="check" disabled>Check style</button>
+    <span id="status">Loading…</span>
+  </div>
+</div>
+
+<div id="results"></div>
+
+<footer>
+  Source, CLI, and documentation:
+  <a href="https://github.com/hjmcc/euclid-style-linter">github.com/hjmcc/euclid-style-linter</a>
+  (MIT licence). For unpublished consortium drafts you can equally run the
+  single-file, stdlib-only linter locally.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const setStatus = (msg) => { $("status").textContent = msg; };
+
+const esc = (s) => s.replace(/[&<>"]/g,
+  (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let lintFn = null;
+
+async function init() {
+  try {
+    setStatus("Loading Python runtime (about 15 MB, cached after first visit)…");
+    const pyodide = await loadPyodide({
+      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/",
+    });
+    const resp = await fetch("lint_euclid_style.py");
+    if (!resp.ok) throw new Error("could not fetch lint_euclid_style.py");
+    pyodide.FS.writeFile("/home/pyodide/lint_euclid_style.py",
+                         await resp.text());
+    pyodide.runPython(
+      "import sys, json\n" +
+      "sys.path.insert(0, '/home/pyodide')\n" +
+      "from pathlib import Path\n" +
+      "from lint_euclid_style import lint_file, __version__, _CATEGORY_MAP\n" +
+      "\n" +
+      "def _lint(src, cats, sev, dialect):\n" +
+      "    p = Path('/home/pyodide/input.tex')\n" +
+      "    p.write_text(src)\n" +
+      "    vs = lint_file(p, categories=list(cats) if cats is not None else None,\n" +
+      "                   min_severity=sev, dialect=dialect)\n" +
+      "    return json.dumps([v._asdict() for v in vs])\n" +
+      "\n" +
+      "_META = json.dumps({'version': __version__,\n" +
+      "                    'categories': list(_CATEGORY_MAP.keys())})\n"
+    );
+    const meta = JSON.parse(pyodide.globals.get("_META"));
+    lintFn = pyodide.globals.get("_lint");
+    $("version").textContent = "(linter v" + meta.version + ")";
+    const fs = $("cats");
+    for (const c of meta.categories) {
+      const label = document.createElement("label");
+      const box = document.createElement("input");
+      box.type = "checkbox"; box.value = c; box.checked = true;
+      label.append(box, " " + c);
+      fs.append(label);
+    }
+    $("check").disabled = false;
+    setStatus("Ready. Your text stays in this browser tab.");
+  } catch (err) {
+    setStatus("Failed to load: " + err.message);
+  }
+}
+
+function render(violations, srcLines) {
+  const out = $("results");
+  if (violations.length === 0) {
+    out.innerHTML = '<div class="summary">✅ No violations found.</div>';
+    return;
+  }
+  const order = ["error", "warning", "suggestion"];
+  const icons = { error: "🔴", warning: "🟡", suggestion: "🔵" };
+  const counts = { error: 0, warning: 0, suggestion: 0 };
+  const byRule = {};
+  let html = "";
+  for (const sev of order) {
+    const group = violations.filter((v) => v.severity === sev);
+    if (!group.length) continue;
+    counts[sev] = group.length;
+    html += '<div class="sev-h sev-' + sev + '">' + icons[sev] + " " +
+            sev.charAt(0).toUpperCase() + sev.slice(1) + "s (" +
+            group.length + ")</div>";
+    for (const v of group) {
+      byRule[v.rule_id] = (byRule[v.rule_id] || 0) + 1;
+      const where = v.line > 0 ? "Line " + v.line : "Document";
+      html += '<div class="finding"><div class="head">' +
+              where + ' <span class="rule">[' + esc(v.rule_id) + "]</span> " +
+              esc(v.message) +
+              ' <span class="sect">(Sect. ' + esc(String(v.sg_section)) +
+              ")</span></div>";
+      if (v.line > 0 && v.line <= srcLines.length) {
+        const raw = srcLines[v.line - 1];
+        const ln = '<span class="ln">' + String(v.line).padStart(5) +
+                   " │ </span>";
+        let body;
+        if (v.col >= 0 && v.col < raw.length) {
+          body = esc(raw.slice(0, v.col)) + "<mark>" +
+                 esc(raw.charAt(v.col) || " ") + "</mark>" +
+                 esc(raw.slice(v.col + 1));
+        } else {
+          body = esc(raw);
+        }
+        html += '<code class="src">' + ln + body + "</code>";
+      }
+      html += "</div>";
+    }
+  }
+  const parts = [];
+  if (counts.error) parts.push(counts.error + " errors");
+  if (counts.warning) parts.push(counts.warning + " warnings");
+  if (counts.suggestion) parts.push(counts.suggestion + " suggestions");
+  const top = Object.entries(byRule).sort((a, b) => b[1] - a[1])
+    .map(([r, n]) => r + " ×" + n).join(", ");
+  html = '<div class="summary">Summary: ' + parts.join(", ") + " (" +
+         violations.length + ' total)<div class="byrule">By rule: ' +
+         esc(top) + "</div></div>" + html;
+  out.innerHTML = html;
+}
+
+$("check").addEventListener("click", () => {
+  const src = $("src").value;
+  if (!src.trim()) {
+    $("results").innerHTML =
+      '<div class="summary">Paste some LaTeX source first.</div>';
+    return;
+  }
+  const boxes = [...document.querySelectorAll("#cats input:checked")]
+    .map((b) => b.value);
+  const all = document.querySelectorAll("#cats input").length;
+  const cats = (boxes.length === 0 || boxes.length === all) ? null : boxes;
+  try {
+    const json = lintFn(src, cats, $("severity").value, $("dialect").value);
+    render(JSON.parse(json), src.split("\n"));
+  } catch (err) {
+    $("results").innerHTML =
+      '<div class="summary">Linting failed: ' + esc(err.message) + "</div>";
+  }
+});
+
+$("file").addEventListener("change", async (ev) => {
+  const f = ev.target.files[0];
+  if (f) $("src").value = await f.text();
+});
+
+init();
+</script>
+</body>
+</html>

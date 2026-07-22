@@ -12,6 +12,12 @@ project follows [Semantic Versioning](https://semver.org):
 
 ## Unreleased
 
+- **Client-side web app** (`web/index.html`), deployed to GitHub Pages at
+  <https://hjmcc.github.io/euclid-style-linter/> by
+  `.github/workflows/pages.yml`. The linter runs entirely in the browser
+  via Pyodide (WebAssembly): pasted text never leaves the page, which
+  answers the consortium data-security concern for unpublished drafts.
+  Same controls as the Space (severity, dialect, categories).
 - **Space hardening**: disabled Gradio telemetry (`analytics_enabled=False`)
   and added a privacy note to the web app stating exactly what happens to
   submitted text (processed transiently, nothing stored; transits Hugging
