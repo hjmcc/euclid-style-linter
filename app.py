@@ -114,7 +114,7 @@ def run_linter(latex_source: str, min_severity: str, categories: list[str],
     return "\n".join(parts)
 
 
-with gr.Blocks(title="ECEB Style Linter") as demo:
+with gr.Blocks(title="ECEB Style Linter", analytics_enabled=False) as demo:
     gr.Markdown(
         f"# 🔭 Euclid Style Linter  \n"
         f"*Linter version `v{__version__}`*\n\n"
@@ -156,6 +156,17 @@ with gr.Blocks(title="ECEB Style Linter") as demo:
             )
 
     output = gr.Markdown(label="Results")
+
+    gr.Markdown(
+        "---\n"
+        "**Privacy**: submitted text is sent over HTTPS to this Space, "
+        "written to a temporary file, linted, and the file deleted "
+        "immediately. Nothing is stored or logged by this app, and Gradio "
+        "telemetry is disabled. The text does, however, transit Hugging "
+        "Face infrastructure. For unpublished consortium drafts, prefer "
+        "running the linter locally (it is a single stdlib-only Python "
+        "file): `git clone https://github.com/hjmcc/euclid-style-linter`"
+    )
 
     def _load_file(data: bytes | None) -> str:
         if not data:

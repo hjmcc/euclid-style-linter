@@ -10,6 +10,13 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
+## Unreleased
+
+- **Space hardening**: disabled Gradio telemetry (`analytics_enabled=False`)
+  and added a privacy note to the web app stating exactly what happens to
+  submitted text (processed transiently, nothing stored; transits Hugging
+  Face infrastructure; local CLI recommended for unpublished drafts).
+
 ## 0.8.0 — 2026-07-22
 
 ### Added
