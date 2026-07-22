@@ -1648,9 +1648,11 @@ class StyleChecker:
     def check_R06_document(ctx: TexContext) -> list[Violation]:
         r"""DR1 requirements: \AckDRone and \cite{DR1cite} (--release dr1).
 
-        Papers using DR1 data must include the official \AckDRone
-        acknowledgement macro (defined in euclid.sty) and cite the DR1
-        reference paper with the official DR1cite key from Euclid.bib.
+        All EC papers must include \AckEC (checked by R04, always on);
+        papers using DR1 data must IN ADDITION include the official
+        \AckDRone acknowledgement macro (defined in euclid.sty) and cite
+        the DR1 reference paper with the official DR1cite key from
+        Euclid.bib. \AckDRone complements \AckEC, it does not replace it.
         Only checked under --release dr1 (the default); use
         --release none for papers not based on DR1 data.
         """

@@ -171,7 +171,7 @@ omit the source snippets.
 | R03 | References | suggestion | Commented-out text (arXiv source is public) | 2.6 |
 | R04 | References | suggestion | Missing `\AckEC` acknowledgements macro | 3.4 |
 | R05 | References | warning | "arXiv e-prints" redundancy in bibliography | 2.7 |
-| R06 | References | warning | DR1 paper missing `\AckDRone` or `\cite{DR1cite}` (with `--release dr1`, the default) | 3.4 |
+| R06 | References | warning | DR1 paper missing `\AckDRone` (required in addition to `\AckEC`) or `\cite{DR1cite}` (with `--release dr1`, the default) | 3.4 |
 | S01 | Style | error | "DEC" should be "Dec", "R.A." should be "RA" | 2.3 |
 | S02 | Style | error | "non" before capitals needs hyphen ("non-Gaussian") | 2.4 |
 | S03 | Style | warning | Waveband letters should be italicised | 2.4 |
