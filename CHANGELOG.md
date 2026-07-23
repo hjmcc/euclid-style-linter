@@ -10,6 +10,52 @@ project follows [Semantic Versioning](https://semver.org):
 - **PATCH** — false-positive fixes, bug fixes, internal refactoring
   with no intended change to rule output.
 
+## 1.0.0 – 2026-07-23
+
+First stable release. No new rules; this release marks the validation
+milestone: every finding on five real EC papers hand-triaged, with zero
+false positives across the 171 findings currently reported (see
+`tests/validation_report.md`).
+
+### Fixed
+
+- **Affiliation blocks**: the linter now tracks multi-line
+  `\author{...}`/`\institute{...}` blocks by brace depth and suppresses
+  the number, quote, and dash rules there (U05, U07, U08, T01, T02, T05).
+  Postal codes ("75014 Paris"), `\inst{12,345}` reference lists, and
+  institute names with straight quotes are no longer flagged. On the
+  Euclid I Overview paper this removes 229 false positives from the
+  generated author list.
+- **T15**: reference abbreviations ("Sect.", "Fig.", "Tab.", "Eq.")
+  before `\ref` are no longer treated as sentence ends.
+- **N01**: skips title-case compound names ("Euclid Reference Survey
+  Definition", "Euclid Science Team"), underscore identifiers
+  (`Euclid\_SNT\_2023B`), and `\bibliography{}` arguments; "Sky" and
+  "Surveys" added to the roman-suffix list.
+- **T14**: LaTeX dimensions are no longer read as prose quantities
+  (`\vspace{-3cm}`, `\vskip 4mm`, `p{6cm}` column specs).
+- **U10**: silent inside tables, where 4-digit integers keep the
+  thousands separator to align with 5-digit rows in the same column.
+- **T02**: `\cline{2-5}`/`\cmidrule{2-4}` column ranges are not number
+  ranges.
+- **U03**: `\label{}`/`\ref{}`/cite bodies are not prose ("20deg" inside
+  a label).
+- **E07**: only lowercase "catalog" is flagged; capitalised "Catalog" in
+  official names ("2MASS Point Source Catalog") keeps its spelling.
+- **S03**: communications bands ("K-band telemetry") are not photometric
+  wavebands.
+- **S04**: "data is" is no longer flagged when "data" is the object of an
+  infinitive ("the software employed to process the data is under strict
+  control").
+- **T05**: `\\` inside A&A `\tablefoot{}` is a legitimate line break.
+
+### Validation
+
+- Re-validated against the full arXiv sources of EP-I (2108.01201),
+  Euclid I Overview (2405.13491v2), and Euclid II VIS (2405.13492v2), in
+  addition to the VIS DR1 and Q1 papers. Regression suite: 233 cases
+  (was 202 at v0.10.0).
+
 ## 0.10.0 — 2026-07-22
 
 ### Changed

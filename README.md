@@ -216,7 +216,7 @@ be automated (figure quality, cross-references, citation format).
 
 ## Validation
 
-The linter has been validated in two rounds against real EC papers:
+The linter has been validated in three rounds against real EC papers:
 
 - **Published ECEB-reviewed papers** (EP-I: Wide Survey, arXiv:2108.01201;
   Euclid I: Overview, arXiv:2405.13491; Euclid II: VIS, arXiv:2405.13492;
@@ -228,6 +228,13 @@ The linter has been validated in two rounds against real EC papers:
   editor made the authors fix, and every finding it still reports is a
   genuine leftover (zero false positives). Its pre-editorial predecessor
   served as the recall check for the editor-derived rules.
+- **A full re-validation for v1.0.0** (2026-07-23) against the complete
+  arXiv sources of the three published papers above, this time including
+  the Overview paper's generated author list (about 2500 authors and 300
+  affiliations) and the Wide Survey's pre-referee v1 source. Every finding
+  was hand-triaged; 15 false-positive classes found this way were fixed,
+  each with a regression test. Final state: **zero false positives** across
+  the 171 findings reported on all five validation papers.
 
 See `tests/validation_report.md` for the current triage (the earlier round
 is preserved in git history).

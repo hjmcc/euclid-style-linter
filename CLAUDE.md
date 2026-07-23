@@ -60,7 +60,7 @@ euclid-style-linter/
 │   ├── Euclid_Style_Guide_V5.pdf  # ECEB Style Guide V5
 │   └── euclid_template/             # A&A template for EC papers
 └── tests/
-    ├── test_lint_euclid_style.py     # pytest regression suite (202 cases)
+    ├── test_lint_euclid_style.py     # pytest regression suite (233 cases)
     ├── test_lint_euclid_style.tex    # Synthetic test file with markers
     ├── validation_report.md          # Triage of findings on real papers
     └── run_eceb_validation.sh        # Cross-validation script

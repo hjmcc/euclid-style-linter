@@ -24,7 +24,7 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
-__version__ = "0.10.0"
+__version__ = "1.0.0"
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -57,6 +57,21 @@ _TABULAR_ENVS = {"tabular", "tabular*", "tabularx", "longtable", "array",
 _BEGIN_RE = re.compile(r"\\begin\{(\w[\w*]*)\}")
 _END_RE = re.compile(r"\\end\{(\w[\w*]*)\}")
 
+# Commands opening an author/affiliation block whose body (often spanning
+# many lines) is addresses and reference markers, not prose: postal codes
+# ("75014 Paris") and \inst{12,345} lists look exactly like mis-formatted
+# integers to the number rules.
+_AFFIL_CMD_RE = re.compile(
+    r"\\(?:author|institute|affiliation|affil)\*?\s*(?:\[[^\]]*\])?\s*\{"
+)
+# Line-local affiliation markers, for author lists typeset without a
+# wrapping block command (e.g. "$^{1}$ INAF..." style) or linted in
+# isolation.
+_AFFIL_LINE_RE = re.compile(
+    r"^\s*\$\^\{|\\inst\{|\\orcid\{|\\and\b|\\institute\{|"
+    r"\\affil\b|\\label\{aff"
+)
+
 
 class TexContext:
     """Track LaTeX state across lines."""
@@ -81,6 +96,11 @@ class TexContext:
         # (True even on the line that closes the caption).
         self.caption_brace_depth = 0
         self.in_caption_continuation = False
+        # Brace depth of an unclosed \author{...}/\institute{...} block,
+        # and whether the current line is part of one (True from the
+        # opening line through the line that closes the block).
+        self.affil_brace_depth = 0
+        self.in_affiliation = False
 
     # --- environment queries ------------------------------------------------
     @property
@@ -128,6 +148,27 @@ class TexContext:
                 self.caption_brace_depth = max(
                     0, 1 + rest.count("{") - rest.count("}")
                 )
+
+        # Track multi-line \author{...}/\institute{...} blocks by brace
+        # depth, same as captions.  Unlike captions, in_affiliation is True
+        # on the opening line too, so single-line \author{...} is covered.
+        started_in_affil = self.affil_brace_depth > 0
+        if self.affil_brace_depth > 0:
+            self.affil_brace_depth += (
+                line_nc.count("{") - line_nc.count("}")
+            )
+            if self.affil_brace_depth < 0:
+                self.affil_brace_depth = 0
+        else:
+            m = _AFFIL_CMD_RE.search(line_nc)
+            if m:
+                started_in_affil = True
+                rest = line_nc[m.end():]
+                self.affil_brace_depth = max(
+                    0, 1 + rest.count("{") - rest.count("}")
+                )
+        self.in_affiliation = started_in_affil or self.affil_brace_depth > 0
+
         # Detect \begin{document}
         if r"\begin{document}" in line:
             self.in_preamble = False
@@ -196,6 +237,17 @@ def _strip_comments(line: str) -> str:
 
 def _is_comment_line(line: str) -> bool:
     return line.lstrip().startswith("%")
+
+
+def _is_affiliation_line(stripped: str, ctx: TexContext) -> bool:
+    """True if the (comment-stripped) line is author/affiliation content.
+
+    Either inside a tracked \\author{...}/\\institute{...} block, or
+    carrying a line-local affiliation marker (\\inst{, \\orcid{,
+    \\label{aff...}, ...).  Number- and dash-format rules skip such lines:
+    postal codes, ORCIDs, and affiliation-reference lists are not prose.
+    """
+    return ctx.in_affiliation or bool(_AFFIL_LINE_RE.search(stripped))
 
 
 # Inline math spans: $...$ (not $$...$$)
@@ -332,8 +384,8 @@ class StyleChecker:
         violations = []
         # Proper-noun phrases where Euclid should NOT be italicised
         proper_suffixes = (
-            "Consortium", "Collaboration", "Survey", "Deep", "Catalogue",
-            "Wide", "Legacy", "Flagship", "Ultra-Deep",
+            "Consortium", "Collaboration", "Survey", "Surveys", "Deep",
+            "Catalogue", "Wide", "Legacy", "Flagship", "Ultra-Deep", "Sky",
             # Geographical terms (e.g. "Euclid Avenue")
             "Avenue", "Street", "Road", "Boulevard",
         )
@@ -352,7 +404,8 @@ class StyleChecker:
         # length-preserving substitution so match positions still align
         # with the original line for column reporting.
         graphics_re = re.compile(
-            r"\\(?:includegraphics(?:\[[^\]]*\])?|graphicspath)"
+            r"\\(?:includegraphics(?:\[[^\]]*\])?|graphicspath"
+            r"|bibliography(?:style)?)"
             r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}"
         )
         stripped = graphics_re.sub(
@@ -368,12 +421,22 @@ class StyleChecker:
             after_word = re.match(r"Euclid\s+([\w-]+)", context_after)
             if after_word and after_word.group(1) in proper_suffixes:
                 continue
+            # Title-case compound names ("Euclid Reference Survey
+            # Definition", "Euclid Science Team", "Euclid Imaging
+            # Consortium"): two or more capitalised words after Euclid mark
+            # a proper name — roman is correct.
+            if re.match(r"Euclid\s+[A-Z][\w-]*\s+[A-Z]", context_after):
+                continue
             # Data-product / release names ("Euclid DR1", "Euclid Q1"):
             # roman is correct here (A&A editorial ruling on the VIS DR1
             # paper), including acronym-macro forms ("Euclid \ac{DR1}").
             if re.match(r"Euclid\s+(?:DR|Q)\d\b", context_after):
                 continue
             if re.match(r"Euclid\s+\\ac[a-z]*\{", context_after):
+                continue
+            # Underscore-joined identifiers ("Euclid\_SNT\_2023B"): object
+            # designations, not the mission — roman is correct.
+            if re.match(r"Euclid\\?_", context_after):
                 continue
             # Is Euclid at the tail of a Title-Cased compound name?
             # E.g. "Cosmology Likelihood for Observables in Euclid"
@@ -882,7 +945,9 @@ class StyleChecker:
     def check_E07(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
         """'catalog' should be 'catalogue'."""
         violations = []
-        for m in re.finditer(r"\bcatalog\b", text, re.IGNORECASE):
+        # Lowercase only: capitalised "Catalog" is part of an official
+        # proper name ("2MASS Point Source Catalog") and keeps its spelling.
+        for m in re.finditer(r"\bcatalog\b", text):
             # Skip if in a path or code context
             before = text[max(0, m.start() - 5):m.start()]
             if "/" in before or "_" in before or "\\" in before:
@@ -959,6 +1024,12 @@ class StyleChecker:
         stripped = _strip_comments(raw)
         # Remove math regions for this check
         check = _remove_math(stripped)
+        # Remove \label/\ref/cite bodies: "20deg" inside
+        # \label{Fig:deepn-20deg-...} is an identifier, not prose
+        check = _remove_commands(check, [
+            "label", "ref", "cref", "Cref", "eqref", "pageref", "nameref",
+            "cite", "citep", "citet", "citealt",
+        ])
         for m in pattern.finditer(check):
             # Skip if preceded by \, or ~ or \; or thin space
             before = check[max(0, m.start() - 3):m.start() + 1]
@@ -978,7 +1049,7 @@ class StyleChecker:
         violations = []
         # Skip affiliation lines (postal codes contain digit-E-digit)
         stripped_raw = _strip_comments(raw)
-        if r"\label{aff" in stripped_raw:
+        if _is_affiliation_line(stripped_raw, ctx):
             return violations
         # Match patterns like 1e5, 3e-4 in text (not code)
         for m in re.finditer(r"[0-9][eE][+-]?[0-9]", text):
@@ -1002,6 +1073,9 @@ class StyleChecker:
         """Thousands separator should not use comma."""
         violations = []
         stripped = _strip_comments(raw)
+        # Skip affiliation lines: \inst{12,345} is a reference list
+        if _is_affiliation_line(stripped, ctx):
+            return violations
         # Find digit,3-digits pattern but NOT inside .bib references or {,}.
         # Require a leading digit so this only fires on 5+-digit numbers
         # (e.g. 10,000); a bare-comma 4-digit number is handled by U10, which
@@ -1028,6 +1102,10 @@ class StyleChecker:
     def check_U08(lineno: int, raw: str, text: str, ctx: TexContext) -> list[Violation]:
         r"""Integers > 4 digits in prose need a thousands separator (\,)."""
         violations = []
+        # Skip affiliation lines: postal codes ("75014 Paris") are not
+        # quantities
+        if _is_affiliation_line(_strip_comments(raw), ctx):
+            return violations
         # Use the cleaned text so math, \cite{...}, \ref{...}, \url{...},
         # \label{...} etc. are already stripped.
         for m in re.finditer(r"(?<![\w\-.])\d{5,}(?![\w\-.])", text):
@@ -1105,6 +1183,11 @@ class StyleChecker:
         typeset in math such as ``$4\,352$`` is still seen.
         """
         violations = []
+        # Table columns mixing 4- and 5-digit grouped numbers keep the
+        # 4-digit separator for alignment ("2\,656" above "12\,673") —
+        # deliberate typesetting, not a style error.
+        if ctx.in_tabular:
+            return violations
         scanned = _remove_commands(_strip_comments(raw), _U10_STRIP_CMDS)
         for m in _U10_RE.finditer(scanned):
             run = m.group(1)
@@ -1133,6 +1216,10 @@ class StyleChecker:
         """Straight double quotes instead of TeX quotes."""
         violations = []
         stripped = _strip_comments(raw)
+        # Skip affiliation lines: institute names in the centrally
+        # generated EC author list ("G. Galilei") are not author-editable
+        if _is_affiliation_line(stripped, ctx):
+            return violations
         # Remove content inside \url, \href, \texttt, \verb
         check = _remove_commands(stripped, ["url", "href", "texttt", "verb", "lstinline"])
         # Remove math
@@ -1151,9 +1238,15 @@ class StyleChecker:
         violations = []
         stripped = _strip_comments(raw)
         # Skip author/affiliation lines (ORCIDs, addresses, postal codes)
-        if r"\orcid{" in stripped or r"\inst{" in stripped or r"\label{aff" in stripped:
+        if _is_affiliation_line(stripped, ctx):
             return violations
         check = _remove_math(stripped)
+        # \cline{2-5}/\cmidrule(lr){2-4}: LaTeX column-range syntax
+        # requires the hyphen. Length-preserving blank-out.
+        check = re.sub(
+            r"\\c(?:line|midrule(?:\([^)]*\))?)\{[^{}]*\}",
+            lambda mm: " " * len(mm.group(0)), check,
+        )
         # Pattern: digit-digit (single hyphen between numbers).
         # (?<![-\\\d]) ensures we match the full first digit group.
         # (?![\d-]) ensures the second group is complete (no ORCID segments).
@@ -1236,14 +1329,12 @@ class StyleChecker:
             if any(e in _NEWLINE_OK_ENVS for e in ctx.env_stack):
                 return violations
             # Skip affiliation/author block lines (use \\ for separators)
-            if re.search(
-                r"^\s*\$\^\{|\\inst\{|\\orcid\{|\\and\b|\\institute\{|"
-                r"\\affil\b|\\label\{aff",
-                stripped,
-            ):
+            if _is_affiliation_line(stripped, ctx):
                 return violations
-            # Skip \\ inside \footnote{} (line break in footnote)
-            if r"\footnote" in stripped or r"\footnote" in ctx.prev_raw_line:
+            # Skip \\ inside \footnote{} or A&A \tablefoot{} (line breaks
+            # separate footnote entries there)
+            if re.search(r"\\(?:footnote|tablefoot)", stripped) or \
+                    re.search(r"\\(?:footnote|tablefoot)", ctx.prev_raw_line):
                 return violations
             # Skip \\ in supertabular header/footer commands and
             # \multicolumn lines (table context not tracked as env)
@@ -1412,6 +1503,20 @@ class StyleChecker:
         r"""Number directly attached to a unit in math (e.g. 1.5keV) — needs \, and roman."""
         violations = []
         stripped = _strip_comments(raw)
+        # Blank out dimension arguments of layout commands (\vspace{-3cm},
+        # \rule{0pt}{1cm}): LaTeX dimension syntax, not prose quantities.
+        # Length-preserving so columns still align.
+        dim_re = re.compile(
+            r"\\(?:vspace|hspace|rule|setlength|addtolength)\*?"
+            r"(?:\[[^\]]*\])?(?:\{[^{}]*\})+"
+            # TeX primitive dimensions: \vskip 4mm, \kern 2pt
+            r"|\\(?:vskip|hskip|kern)\s*-?\d*\.?\d+\s*"
+            r"(?:cm|mm|pt|bp|em|ex|in|sp|mu)\b"
+            # tabular column specs: p{6cm}, m{2in}
+            r"|(?<![\w\\])[pmb]\{\d*\.?\d+\s*(?:cm|mm|pt|em|ex|in)\}"
+        )
+        stripped = dim_re.sub(lambda mm: " " * len(mm.group(0)), stripped)
+        text = dim_re.sub(lambda mm: " " * len(mm.group(0)), text)
         # Curated unit list — physical units that would be wrong-italic in math.
         units = (
             r"keV|MeV|GeV|TeV|eV|"
@@ -1472,9 +1577,15 @@ class StyleChecker:
         if m:
             prev = _strip_comments(ctx.prev_raw_line).rstrip()
             prev_is_sentence_end = (not prev) or prev[-1] in ".?!"
-            # "et al.", "e.g." etc. end in "." without ending a sentence.
+            # "et al.", "e.g.", and reference abbreviations ("Sect.",
+            # "Fig.") end in "." without ending a sentence.
             if prev_is_sentence_end and prev:
-                if re.search(r"\b(al|etc|e\.g|i\.e|cf|vs)\.\s*$", prev[-10:]):
+                if re.search(
+                    r"\b(al|etc|e\.g|i\.e|cf|vs"
+                    r"|Sects?|Figs?|Tabs?|Eqn?s?|Cols?|Apps?|Chaps?|Nos?"
+                    r")\.\s*$",
+                    prev[-10:],
+                ):
                     prev_is_sentence_end = False
             if prev_is_sentence_end:
                 violations.append(Violation(
@@ -1486,7 +1597,12 @@ class StyleChecker:
         # After sentence-ending punctuation on the same line.
         for m in re.finditer(r"\.\s+" + ref_cmd, stripped):
             before = stripped[max(0, m.start() - 10):m.start()]
-            if re.search(r"\b(al|etc|e\.g|i\.e|cf|vs)\s*$", before):
+            if re.search(
+                r"\b(al|etc|e\.g|i\.e|cf|vs"
+                r"|Sects?|Figs?|Tabs?|Eqn?s?|Cols?|Apps?|Chaps?|Nos?"
+                r")\s*$",
+                before,
+            ):
                 continue
             violations.append(Violation(
                 lineno, m.start(1), "T15", "warning",
@@ -1721,6 +1837,15 @@ class StyleChecker:
             before = text[max(0, m.start() - 2):m.start()]
             if "$" in before or "\\" in before:
                 continue
+            # Communications bands ("K-band telemetry"), not photometric
+            # wavebands — roman is correct.
+            after = text[m.end():m.end() + 30]
+            if re.match(
+                r"\s+(?:telemetry|antenna|communications?|downlink|"
+                r"uplink|link|transponder|transmitter)\b",
+                after,
+            ):
+                continue
             violations.append(Violation(
                 lineno, m.start(), "S03", "warning",
                 f'Waveband letter "{band}" should be italicised '
@@ -1742,6 +1867,11 @@ class StyleChecker:
                 r"(\S+\s+)*$",
                 before,
             ):
+                continue
+            # Skip when "data" is the object of an infinitive ("the
+            # software employed to process the data is under control"):
+            # the verb agrees with an earlier subject, not with "data".
+            if re.search(r"\bto\s+\w+\s+(?:the\s+)?$", before):
                 continue
             verb = m.group(1)
             plural = {"is": "are", "was": "were", "has": "have"}

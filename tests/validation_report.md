@@ -155,3 +155,176 @@ CLEAN: N02 ×1).
    extension).
 5. **Multi-line inline math** spanning source lines is not parsed (known
    single-line-parser limitation).
+
+---
+
+# Addendum: Euclid I Overview (Mellier+ 2024, arXiv 2405.13491v2)
+
+**Date**: 2026-07-23
+**Linter**: v0.10.0 + affiliation-block fix (uncommitted)
+**Status of paper**: published (A&A), so findings are either slips that
+survived refereeing (TP), linter FPs, or invocation artifacts.
+
+Context: this paper carries its full generated author/affiliation list
+*after* `\begin{document}` (author block L330, affiliations L1471–2181), so
+unlike the VIS papers the list is actually linted. Before the affiliation
+fix it produced 264 findings (212 postal-code U08 FPs); after, 52.
+
+## Triage: 52 findings
+
+| Rule | Count | Verdict | Notes |
+|------|-------|---------|-------|
+| T16 | 9 | **TP** | `{\it Left:}`, `{\it Right:}`, `\textit{Top:}`, `{\it Top panels:}` etc. in captions L2634/2649/2733/4422 — colon inside italics, guide Sect. 2.8. Same defect class as the 6 TPs in the VIS DR1 paper. |
+| E02 | 4 | **TP** | "a few percent" ×2 (L3155, L3182), "percent level accuracy" (L4274) — should be "per cent". "sub-percent requirements" (L3662) is debatable (hyphenated compound) but still non-British. |
+| T02 | 3 | **TP** | "10-30\%", "10-20\%", "21-23" (date range) — hyphen for en-dash. |
+| T12 | 3 | **TP** (debatable class) | Colon before displayed equation at L2353/2358/2365 (e.g. "…\citep{hamilton98}:" before `\begin{align}`). Genuine per the rule's premise; warning severity is right. |
+| N05 | 1 | **TP** | "the \gls{UNIONS} dataset" (L3348) — same line correctly uses "data sets" elsewhere. |
+| T15 | 1 | **TP** | Paragraph-initial `\cref{fig:sample_spectrum}` (L3408) → `\Cref`. |
+| U08 | 1 | **TP** | "over 30000 at \HE=22" (L4558) → `30\,000`. The only U08 survivor of the affiliation fix; 212 postal-code FPs suppressed. |
+| U10 | 1 | **TP** | "1\,400 cool exoplanets" (L4672) — 4-digit integer takes no separator. |
+| S05 | 1 | **TP (debatable)** | "the universe's density at the epoch of halo formation" (L4318) — cosmological context, should be "Universe". |
+| R03 | 1 of 4 | **TP (low value)** | L2183 "% Add short versions of title…" — A&A template boilerplate, consistent with known limitation 2. |
+| R03 | 3 of 4 | **Non-actionable** | L322/328/1470 "please do not edit the author/affiliation list — contact ECEB Bureau": these comments are *part of* the generated author list and must stay. Candidate for a whitelist pattern. |
+| T01 | 17 | **Non-actionable TP** | All 17 (≈9 distinct lines, rule fires per quote char) are straight quotes in Italian institute names in the generated affiliation list ("G. Galilei", "E. Pancini", …; L1887 even mixes `` ``…" ``). Typographically real, but the list is centrally generated and not author-editable. Recommend suppressing T01 via the affiliation guard. |
+| R06 | 2 | **N/A (invocation)** | Pre-DR1 paper linted with the default `--release dr1`; correct invocation is `--release none`. |
+| T14 | 2 | **FP** | `\vspace{-3cm}`, `\vspace{-2.5cm}` (L3590/3594) — LaTeX dimension arguments, not prose quantities. Fix: strip layout-command dimension args (\vspace, \hspace, \rule) before matching. |
+| N01 | 1 | **FP** | "internally called Euclid\_SNT\_2023B" (L4658) — an object designation, not the mission. Fix: skip "Euclid" immediately followed by `\_`/`_`. |
+| S04 | 1 | **FP** | "the software that is employed to process the data is under strict control" (L4198) — the verb agrees with "software"; "data" is the object of "process". Fix candidate: skip "the data is" when preceded by "to <verb>" (infinitive-object attachment); otherwise accept as known parser-free limitation. |
+| T05 | 1 | **FP** | Lone `\\` at L3990 inside an A&A `\tablefoot{…}` body, separating footnote entries — legitimate there. Fix: extend the footnote guard to `\tablefoot` (current guard only matches `\footnote` in line or prev line). |
+
+## Summary
+
+- **25 TP** (2 debatable), **5 FP** (T14 ×2, N01, S04, T05), **20
+  non-actionable** (17 T01 + 3 R03 in the untouchable generated author
+  list) / **2 N/A** (R06 wrong release mode).
+- Precision on actionable findings: 25/30 = 83%. The 5 FPs are guard gaps
+  never before exercised (this is the first validation paper whose
+  affiliation list and table-heavy appendix are linted); each has a
+  concrete fix candidate above, to be applied with EDGE regressions.
+- The affiliation-block fix is validated at scale here: 212/213 U08
+  findings were postal codes and are now suppressed; the 1 survivor is a
+  genuine violation.
+
+## Fixes applied (2026-07-23, same session)
+
+All five FP classes plus the T01 affiliation suppression were implemented,
+each with an EDGE regression in the synthetic fixture:
+
+| Fix | Implementation | EDGE test |
+|-----|----------------|-----------|
+| T01 in affiliations | `_is_affiliation_line()` guard (same as U07/U08) | `T01-affiliation-quotes` |
+| T14 on dimensions | blank `\vspace/\hspace/\rule/\setlength/\addtolength` args before matching | `T14-vspace`, `T14-rule` |
+| N01 on identifiers | skip `Euclid` immediately followed by `\_`/`_` | `N01-identifier` |
+| T05 in `\tablefoot` | footnote guard extended to `\tablefoot` (line or prev line) | `T05-tablefoot` |
+| S04 infinitive object | skip `to <verb> [the] data is` attachment | `S04-infinitive-object` |
+
+Outcome:
+- Synthetic fixture: 219 tests pass (was 213).
+- Mellier overview: 52 → 30 findings; exactly the 22 triaged
+  FP/non-actionable line-level findings removed, all 25 TPs retained.
+  With the correct `--release none` invocation: 28 findings
+  (25 TP + 3 R03 generated-list boilerplate).
+- VIS DR1 and Q1 papers: output unchanged (no recall regression against
+  their all-TP triages).
+
+Remaining non-actionable residue on generated author lists: the three R03
+hits on the ECEB "please do not edit" comments (whitelist pattern still a
+candidate, not implemented).
+
+---
+
+# Addendum 2: Euclid II VIS (Cropper+ 2405.13492v2) and EP-I Wide Survey (Scaramella+ 2108.01201)
+
+**Date**: 2026-07-23
+**Linter**: v0.10.0 + this session's fixes (uncommitted)
+**Invocation**: `--release none` (both are pre-DR1 papers)
+
+Provenance caveat: arXiv holds only **v1** of EP-I (the accepted version was
+never uploaded; the tarball mtime is two days after initial submission), so
+EP-I is a **pre-referee recall target** like the Q1 paper, not a silence
+target. Euclid II v2 is the published version (silence target). Euclid II
+`\input`s its author list in the preamble, so its affiliations are not
+linted.
+
+## Triage: Euclid II VIS — 6 findings
+
+| Rule | Count | Verdict | Notes |
+|------|-------|---------|-------|
+| T08 | 1 | **TP** | "…(Sect.~\ref{…}). Sect.\ref{sec:open_points} reflects…" — abbreviation opens a sentence; survived into print. |
+| E02 | 1 | **TP (debatable)** | "percent-level variations" — hyphenated compound, same class as Mellier's "sub-percent". |
+| N01 | 2 | **FP** | (a) "The Euclid Imaging Consortium Science Book" — title-case compound name, roman correct; (b) `\bibliography{refs,Euclid}` — file argument. |
+| S03 | 1 | **FP** | "K-band telemetry" — radio communications band, not a photometric waveband. |
+| T14 | 1 | **FP** | `\noalign{\vskip 4mm}` — TeX primitive dimension, sibling of the fixed `\vspace{}` class. |
+
+## Triage: EP-I Wide Survey — 140 findings
+
+**FP: 51**, all in seven systematic classes:
+
+| Rule | Count | FP class |
+|------|-------|----------|
+| T15 | 23 | "see Sect. \ref{…}" / "Fig. \ref{…}" mid-sentence: the abbreviation's period is taken as a sentence end (exclusion list has e.g./i.e./et al. but not Sect./Fig./Tab./Eq.). This 2021 paper predates the cleveref convention, so the path was never exercised by the newer validation papers. |
+| N01 | 10 | Title-case product compounds, roman correct: "Euclid Reference Survey Definition", "Euclid Science Team", "Euclid Sky Survey Planning Tool", "Euclid Auxiliary Fields" (×2), 4 acronym-table expansions, "Euclid Sky" (WISHES expansion). |
+| U10 | 9 | `2\,656` etc. in table columns whose other rows are 5-digit grouped numbers (`12\,673`): column-alignment convention, deliberate. Judgement call — recommend skipping U10 inside tabular. |
+| T02 | 3 | `\cline{2-5}` — LaTeX column-range syntax requires the hyphen. |
+| U03 | 3 | "20deg" inside `\label{Fig:deepn-20deg-…}` and two `\ref`s to it — command bodies, not prose. |
+| E07 | 2 | "ATLAS All-Sky Stellar Reference Catalog", "2MASS Point Source Catalog" — official proper names; capitalised "Catalog" should not be anglicised. |
+| T14 | 1 | `p{6cm}` in a supertabular column spec. |
+
+**TP: 60** (pre-referee paper, so expected — this is recall evidence):
+N01 ×22 bare mission uses ("followed by Euclid as it operates", "Euclid
+FoV", "the Euclid sky"; 4 debatable attributive/lowercase-product cases),
+T16 ×11 (panel descriptors, both colon-inside and not-italicised forms),
+E01 ×10 (optimized/center/color/realized), N05 ×3 (dataset), N17 ×3 (bare
+Gaia — matches the Q1 recall class), E02 ×3 (percent), S05 ×2 ("the sun"),
+N12 ×2 ("point like"), T12 ×1, T06 ×1 (bare URL in footnote), E07 ×1
+("2MRS catalog", lowercase), S03 ×1 ("JEDIS-g … in g band", debatable:
+acronym expansion).
+
+**TP low value: 29** R03 commented-out text (incl. one ECEB "do not edit"
+boilerplate line), consistent with known limitation 2.
+
+## Verdict for a 1.0.0 release
+
+Not yet. EP-I's 2021-era conventions (plain `\ref` with "Fig. " prefixes,
+`\cline` tables, aligned table integers) exposed **nine new FP classes
+(~55 findings)** that the post-2023 papers never exercised. All are
+narrow, guardable gaps:
+
+1. T15: extend abbreviation exclusion (Sect/Fig/Tab/Eq/Col/App/No + plurals).
+2. N01: skip title-case chains (`Euclid + Capitalised + Capitalised`); add "Sky", "Surveys" to proper suffixes.
+3. N01: blank `\bibliography{…}` arguments.
+4. U10: skip inside tabular environments (alignment convention).
+5. T02: skip `\cline{…}`/`\cmidrule{…}`.
+6. U03: strip `\label{}`/`\ref{}` bodies before matching.
+7. E07: flag lowercase "catalog" only; capitalised "Catalog" is a proper name.
+8. T14: extend dimension blanking to `\vskip`/`\hskip`/`\kern` and `p{}/m{}/b{}` column specs.
+9. S03: skip communications-band context ("K-band telemetry/antenna/downlink").
+
+After those land (each with EDGE regressions) and both papers re-triage
+clean, 1.0.0 is justified.
+
+## Re-triage after the nine guards (2026-07-23, same session)
+
+All nine guards implemented, each with EDGE regressions (14 new cases;
+suite now 233 passing). Post-guard state, `--release none`:
+
+| Paper | Before | After | Remaining composition |
+|-------|--------|-------|----------------------|
+| EP-I Wide Survey (v1) | 140 | **88** | 59 TP (3 debatable) + 29 R03 low-value. **0 FP.** |
+| Euclid II VIS | 6 | **2** | 2 TP (T08 sentence-start "Sect.", E02 "percent-level"). **0 FP.** |
+| Euclid I Overview | 28 | **28** | unchanged: 25 TP + 3 R03 generated-list boilerplate. |
+| VIS DR1 / Q1 | — | — | output byte-identical, no recall regression. |
+
+The N01 suppression was verified surgical: lines with two findings (e.g.
+EP-I L424 "the Euclid one" + "the Euclid Surveys", L1479 "Euclid Auxiliary
+Fields" + "1--4 Euclid FoVs") kept the genuine bare-mission hit and lost
+only the proper-name hit. The surviving E07 is the lowercase "2MRS
+catalog" TP; the two proper-name "Catalog"s are suppressed.
+
+**Zero false positives across the 171 findings currently reported on the
+five validation papers** (Mellier 28, EP-I 88, Euclid II 2, VIS DR1 14,
+Q1 39, under their correct `--release` invocations; R03 template/boilerplate
+comments counted as low-value TPs). Known deliberate trade-offs: E07 no longer flags
+capitalised "Catalog" (sentence-start misses accepted), U10 is silent
+inside tables (alignment convention), S04 skips infinitive-object
+attachments. This state meets the bar for a 1.0.0 release.

@@ -343,6 +343,66 @@ The galaxy has a stellar mass of $10^{11}$ solar masses. % EDGE: S05-generic-gal
 % Edge: affiliation \\ must NOT trigger T05
 $^{1}$ INAF-Osservatorio, Via Frascati 33, I-00078 Roma, Italy\\ % EDGE: T05-affiliation
 
+% Edge: postal codes inside a multi-line \institute{...} block must NOT
+% trigger U08 (thousands separator), even on continuation lines that carry
+% no line-local affiliation marker.
+\institute{Institut d'Astrophysique de Paris, 98bis bd Arago, 75014 Paris, France\label{aff301} % EDGE: U08-zip-institute
+\and
+Max-Planck-Institut f\"ur extraterrestrische Physik, Giessenbachstra{\ss}e 1, % EDGE: U08-zip-wrap-head
+85748 Garching, Germany\label{aff302} % EDGE: U08-zip-wrapped
+\and
+Univ. Grenoble Alpes, CNRS, IPAG, 38000 Grenoble, France % EDGE: U08-zip-block-only
+\and
+Dipartimento di Fisica e Astronomia "G. Galilei", Universit\`a di Padova, 35131 Padova, Italy\label{aff303} % EDGE: T01-affiliation-quotes
+}
+The survey contains 20000 sources in this field. % EXPECT: U08
+
+% Edge: affiliation-reference list in \inst{...} must NOT trigger U07
+\and C.~Author\inst{12,345} % EDGE: U07-inst-refs
+
+% Edge: underscore-joined identifier must NOT trigger N01
+The transient was internally called Euclid\_SNT\_2023B in the pipeline. % EDGE: N01-identifier
+
+% Edge: LaTeX dimension arguments must NOT trigger T14
+\vspace{-2.5cm} % EDGE: T14-vspace
+\rule{0pt}{3cm} % EDGE: T14-rule
+
+% Edge: \\ separating entries inside \tablefoot{} must NOT trigger T05
+\tablefoot{These fiducial values are used for the synthetic data.
+\\ % EDGE: T05-tablefoot
+$^\ddag$ A constant nuisance parameter is assumed.}
+
+% Edge: "data" as infinitive object must NOT trigger S04
+The software that is employed to process the data is under strict control. % EDGE: S04-infinitive-object
+
+% Edge: reference abbreviations before \ref are not sentence ends (T15)
+Details are given in Sect. \ref{sec:model} and in Fig. \ref{fig:layout}. % EDGE: T15-abbrev-midsentence
+The dither pattern is shown in Fig. % EDGE: T15-abbrev-wrap-head
+\ref{fig:dither} for the reference sequence. % EDGE: T15-abbrev-linestart
+
+% Edge: title-case compound names keep roman Euclid (N01)
+The Euclid Reference Survey Definition was produced by the Euclid Science Team. % EDGE: N01-titlecase-chain
+WISHES stands for Wide Imaging with Subaru HSC of the Euclid Sky. % EDGE: N01-sky
+\bibliography{refs,Euclid} % EDGE: N01-bibliography
+
+% Edge: proper-name Catalog is not anglicised (E07)
+Stars come from the 2MASS Point Source Catalog for calibration. % EDGE: E07-proper-name
+
+% Edge: communications bands are not photometric wavebands (S03)
+The spacecraft uses K-band telemetry for the downlink. % EDGE: S03-telemetry
+
+% Edge: label/ref bodies are not prose (U03)
+\label{fig:deepn-20deg-area-time} % EDGE: U03-label-body
+The survey area is shown in Fig.~\ref{fig:deepn-20deg-area-time} here. % EDGE: U03-ref-body
+
+% Edge: table constructs (T14 column spec / \vskip, U10 alignment, T02 \cline)
+\begin{tabular}{l p{6cm}} % EDGE: T14-colspec
+\noalign{\vskip 4mm} % EDGE: T14-vskip-noalign
+Pass & \phantom{0}2\,656 \\ % EDGE: U10-table-alignment
+\cline{1-2} % EDGE: T02-cline
+Total & 12\,673 \\
+\end{tabular}
+
 % Edge: standalone noun "power law" must NOT trigger N12
 The relation is described by a power law with slope $\eta$. % EDGE: N12-noun
 
